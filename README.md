@@ -449,13 +449,13 @@ MIT License
 
 # 👨‍💻 Author
 
-**Avanindra Vijay**
+**Devang Raval**
 
 AI Engineer | GenAI Developer | Data Scientist
 
-GitHub: https://github.com/AvanindraVijay
+GitHub: https://github.com/Devang1801
 
-LinkedIn: https://linkedin.com/in/vijayavanindra
+LinkedIn: https://linkedin.com/in/devang1801
 
 ---
 
