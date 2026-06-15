@@ -1,0 +1,234 @@
+============================================================
+  SAMPLE USER QUESTIONS — SQL Agent + RAG (PDF) Tool
+============================================================
+
+
+────────────────────────────────────────────────────────────
+  BASIC QUERIES
+────────────────────────────────────────────────────────────
+
+* show all stocks
+* show all details
+* list all companies
+* show technology sector companies
+* show stocks from USA
+* show stocks traded on NASDAQ
+* show companies with dividend yield above 2
+* show companies with PE ratio below 20
+
+
+────────────────────────────────────────────────────────────
+  AGGREGATION QUERIES
+────────────────────────────────────────────────────────────
+
+* how many companies are there
+* total market cap by country
+* average close price by sector
+* average PE ratio by exchange
+* highest market cap company
+* lowest close price stock
+* top 10 companies by market cap
+* top 5 highest volume stocks
+
+
+────────────────────────────────────────────────────────────
+  SORTING QUERIES
+────────────────────────────────────────────────────────────
+
+* show stocks ordered by volume
+* show companies ordered by market cap descending
+* show highest dividend yield stocks
+* show lowest PE ratio stocks
+
+
+────────────────────────────────────────────────────────────
+  FILTERING QUERIES
+────────────────────────────────────────────────────────────
+
+* show stocks where close price is above 500
+* show stocks where volume is greater than 1000000
+* show finance sector companies in USA
+* show healthcare companies with PE ratio less than 15
+
+
+────────────────────────────────────────────────────────────
+  DATE QUERIES
+────────────────────────────────────────────────────────────
+
+* show stocks traded in 2024
+* show stock data between 2024-01-01 and 2024-03-31
+* show highest close price in 2025
+
+
+────────────────────────────────────────────────────────────
+  ANALYTICAL QUERIES
+────────────────────────────────────────────────────────────
+
+* which sector has highest average market cap
+* which country has most companies
+* compare average close price by country
+* show exchange wise company count
+* which stock has highest trading volume
+* which sector has lowest average PE ratio
+
+
+────────────────────────────────────────────────────────────
+  CHART-FRIENDLY QUERIES
+────────────────────────────────────────────────────────────
+
+* show sectors
+* show exchanges
+* show countries
+* show top sectors by market cap
+* show average close price by sector
+* show volume distribution by exchange
+
+
+────────────────────────────────────────────────────────────
+  SEARCH QUERIES
+────────────────────────────────────────────────────────────
+
+* show apple stock
+* show microsoft stock
+* show tesla stock
+* show companies containing tech
+* show stocks with ticker AAPL
+
+
+────────────────────────────────────────────────────────────
+  ADVANCED QUERIES
+────────────────────────────────────────────────────────────
+
+* show top 5 technology companies by market cap
+* show average dividend yield in healthcare sector
+* show companies with market cap above 500 billion
+* show stocks with highest adjusted close
+* show sectors where average PE ratio is above 25
+* show top countries by total market cap
+
+
+────────────────────────────────────────────────────────────
+  PDF / KNOWLEDGE QUERIES  (answered by RAG tool)
+────────────────────────────────────────────────────────────
+
+  — Stock Market Basics —
+* what is a stock market
+* what is the difference between common stock and preferred stock
+* what is the difference between primary market and secondary market
+* who are the main participants in a stock market
+* what is an IPO
+
+  — Financial Metrics —
+* what is PE ratio and how is it calculated
+* what is PEG ratio
+* what is EV to EBITDA
+* what is dividend yield
+* what is return on equity
+* what is earnings per share
+* what is the current ratio
+* what is debt to equity ratio
+
+  — Country Regulations —
+* what is SEBI and what does it regulate
+* what is the role of SEC in USA stock markets
+* what is MiFID II
+* how does CSRC regulate Chinese stock markets
+* what is the difference between SEBI and SEC
+
+  — Exchanges & Trading —
+* what are the major stock exchanges in the world
+* what is the difference between NYSE and NASDAQ
+* what is BSE and NSE
+* what is a market order vs limit order
+* what is a stop loss order
+* what is T plus 1 settlement
+* what is an iceberg order
+
+  — Historical Market Events —
+* what caused the 2008 financial crisis
+* what was the dot com bubble
+* what happened on Black Monday 1987
+* what was the GameStop short squeeze
+* what was the Harshad Mehta scam
+* what lessons did the COVID 19 market crash teach investors
+
+  — Sector Analysis —
+* what sectors are defined under GICS
+* what is a defensive sector
+* why is healthcare considered a defensive sector
+* what is sector rotation
+* which sectors perform well during economic expansion
+
+  — Investment Concepts —
+* what is value investing
+* what is growth investing
+* what is dollar cost averaging
+* what is the power of compounding
+* what is index investing
+* what is momentum investing
+* what is contrarian investing
+
+  — Risk Management —
+* what is market risk
+* what is liquidity risk
+* what is the Sharpe ratio
+* what is Value at Risk
+* what is maximum drawdown
+* how does portfolio diversification reduce risk
+* what is the Sortino ratio
+
+  — AI & Market Trends —
+* how is artificial intelligence used in stock markets
+* what is algorithmic trading
+* what is high frequency trading
+* what are robo advisors
+* what is alternative data in investing
+* how is NLP used in financial analysis
+
+  — Technical Indicators —
+* what is RSI and how is it interpreted
+* what is MACD
+* what are Bollinger Bands
+* what is VWAP
+* what is a golden cross
+* what is a death cross
+* what are Fibonacci retracement levels
+* what is support and resistance
+
+  — Macroeconomic Impacts —
+* how do interest rates affect stock markets
+* how does inflation impact equity valuations
+* what is the impact of GDP growth on stock markets
+* how does a weak currency affect exporters
+* what are leading economic indicators
+* what is the Non Farm Payrolls report
+
+  — Portfolio Strategies —
+* what is Modern Portfolio Theory
+* what is the efficient frontier
+* what is a core satellite portfolio strategy
+* what is the 60 40 portfolio
+* what is factor investing
+* what is the All Weather Portfolio
+* what is the barbell strategy
+
+  — Market Psychology —
+* what is loss aversion
+* what is confirmation bias in investing
+* what is the disposition effect
+* what is herd behavior in markets
+* what is recency bias
+* what is overconfidence bias
+* how can investors overcome behavioral biases
+* what is the market cycle of emotions
+
+  — Case Studies —
+* what can we learn from Warren Buffett's investment in Coca Cola
+* what happened in the Enron collapse
+* why did Tesla stock rise 1000 percent between 2019 and 2021
+* what is the Infosys growth story
+* what lessons does the GameStop short squeeze teach about short selling
+
+============================================================
+  END OF FILE
+============================================================

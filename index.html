@@ -1,0 +1,2634 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>MarketLens · Stock Market Intelligence Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+/* ═══════════════════════════════════════════════════
+   TOKENS
+═══════════════════════════════════════════════════ */
+:root {
+  --bg:          #f8f7f4;
+  --bg2:         #f0ede8;
+  --surface:     #ffffff;
+  --surface2:    #f5f3ef;
+  --border:      #e4e0d8;
+  --border-soft: #ede9e2;
+
+  --ink:   #18160f;
+  --ink2:  #3a3730;
+  --ink3:  #78726a;
+  --ink4:  #a69d92;
+
+  --accent:      #1c2b4a;
+  --accent-dim:  rgba(28,43,74,.07);
+  --accent-glow: rgba(28,43,74,.18);
+
+  --gold:        #3d80d4;
+  --gold-dim:    rgba(61,128,212,.09);
+  --gold-border: rgba(61,128,212,.22);
+
+  --ruby:        #8b1a1a;
+  --ruby-dim:    rgba(139,26,26,.07);
+
+  --user-from: #1c2b4a;
+  --user-to:   #243660;
+
+  --sh-sm: 0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+  --sh-md: 0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.05);
+  --sh-lg: 0 8px 32px rgba(0,0,0,.10),0 4px 12px rgba(0,0,0,.06);
+
+  --font-d: 'Playfair Display', Georgia, serif;
+  --font-b: 'DM Sans', system-ui, sans-serif;
+  --font-m: 'JetBrains Mono', 'Courier New', monospace;
+
+  --sidebar-w: 260px;
+  --r: 12px;
+  --sidebar-open: 1;
+}
+
+[data-theme="dark"] {
+  --bg:          #0e0d0b;
+  --bg2:         #161410;
+  --surface:     #1a1917;
+  --surface2:    #22201d;
+  --border:      #2c2a26;
+  --border-soft: #232119;
+
+  --ink:   #ede8df;
+  --ink2:  #c4bdb0;
+  --ink3:  #877f75;
+  --ink4:  #565148;
+
+  --accent:      #4a6fa5;
+  --accent-dim:  rgba(74,111,165,.12);
+  --accent-glow: rgba(74,111,165,.25);
+
+  --gold:        #00d4e8;
+  --gold-dim:    rgba(0,212,232,.08);
+  --gold-border: rgba(0,212,232,.20);
+
+  --ruby:        #c0392b;
+  --ruby-dim:    rgba(192,57,43,.10);
+
+  --user-from: #1c2b4a;
+  --user-to:   #243660;
+
+  --sh-sm: 0 1px 3px rgba(0,0,0,.3);
+  --sh-md: 0 4px 16px rgba(0,0,0,.4);
+  --sh-lg: 0 8px 32px rgba(0,0,0,.5);
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+
+html,body {
+  height:100%; overflow:hidden;
+  background:var(--bg); color:var(--ink);
+  font-family:var(--font-b); font-size:15px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* noise overlay */
+body::before {
+  content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+  opacity:.35;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
+}
+
+/* ═══════════════════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════════════════ */
+#login-overlay {
+  position:fixed; inset:0; z-index:1000;
+  background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:2rem;
+  animation:fadeIn .3s ease;
+}
+#login-overlay.hidden { opacity:0; pointer-events:none; transition:opacity .25s ease; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+.login-brand { text-align:center; }
+.login-emblem {
+  width:80px; height:80px; 
+  background:none;
+  border-radius:16px; display:flex; align-items:center;
+  justify-content:center; font-size:3rem; margin:0 auto 0.5rem;
+  /* box-shadow:var(--sh-md); */
+}
+.login-title { font-family:var(--font-d); font-size:2rem; font-weight:700; color:var(--ink); letter-spacing:-.02em; margin-bottom:.3rem; }
+.login-sub   { font-size:.9rem; color:var(--ink3); letter-spacing:.08em; text-transform:uppercase; font-weight:600; }
+
+.login-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:18px; padding:2rem 2.2rem;
+  box-shadow:var(--sh-lg); width:340px;
+}
+.login-card h3 {
+  font-size:.68rem; font-weight:600; letter-spacing:.12em;
+  color:var(--ink4); text-transform:uppercase; margin-bottom:1rem; font-family:var(--font-m);
+}
+.user-btn {
+  display:flex; align-items:center; gap:.9rem;
+  width:100%; padding:.8rem 1rem; border:1px solid var(--border);
+  border-radius:var(--r); background:var(--surface2);
+  cursor:pointer; transition:all .2s; margin-bottom:.5rem;
+  text-align:left; font-family:var(--font-b);
+}
+.user-btn:last-of-type { margin-bottom:0; }
+.user-btn:hover { border-color:var(--accent); background:var(--accent-dim); transform:translateX(3px); }
+.user-avatar { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-family:var(--font-m); font-size:.75rem; font-weight:700; }
+.av-1 { background:rgba(28,43,74,.12); color:var(--accent); }
+.av-2 { background:rgba(139,26,26,.10); color:var(--ruby); }
+.av-3 { background:rgba(61,128,212,.12); color:#1a6fb5; }
+[data-theme="dark"] .av-1 { background:rgba(74,111,165,.18); color:#7fa8d8; }
+[data-theme="dark"] .av-2 { background:rgba(192,57,43,.15); color:#e07060; }
+[data-theme="dark"] .av-3 { background:rgba(0,212,232,.10); color:#00d4e8; }
+.user-info { flex:1; }
+.user-name { font-size:.88rem; font-weight:600; color:var(--ink); display:block; }
+.user-role { font-size:.7rem; color:var(--ink4); font-family:var(--font-m); }
+.user-arrow { color:var(--ink4); font-size:.8rem; transition:transform .2s; }
+.user-btn:hover .user-arrow { transform:translateX(3px); color:var(--accent); }
+.login-footer { font-size:.68rem; color:var(--ink4); text-align:center; font-family:var(--font-m); margin-top:.5rem; }
+
+/* ═══════════════════════════════════════════════════
+   SHELL
+═══════════════════════════════════════════════════ */
+.shell { display:flex; height:100vh; overflow:hidden; position:relative; z-index:1; }
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════ */
+.sidebar {
+  width:var(--sidebar-w);
+  min-width:var(--sidebar-w);
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex; flex-direction:column;
+  flex-shrink:0;
+  box-shadow:var(--sh-sm);
+  transition:transform .28s cubic-bezier(.4,0,.2,1), width .28s cubic-bezier(.4,0,.2,1), min-width .28s;
+  overflow:hidden;
+  position:relative; z-index:10;
+}
+.sidebar.collapsed {
+  width:0; min-width:0;
+  transform:translateX(-260px);
+  border-right-color:transparent;
+}
+
+.sidebar-brand {
+  /* padding:1.3rem 1.2rem 1rem; */
+  border-bottom:1px solid var(--border-soft);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.brand-lockup { display:flex; align-items:center; gap:.50rem; }
+.brand-emblem { width:60px; height:60px; background:none; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:2.2rem; flex-shrink:0; }
+.brand-name { font-family:var(--font-d); font-weight:700; font-size:1.5rem; color:var(--ink); letter-spacing:-.01em; white-space:nowrap; }
+
+.sidebar-body {
+  flex:1; padding:.9rem .8rem;
+  display:flex; flex-direction:column; gap:.65rem;
+  overflow:hidden;
+}
+.btn-new {
+  display:flex; align-items:center; gap:.55rem;
+  padding:.6rem .9rem;
+  background:var(--gold-dim); border:1px solid var(--gold-border);
+  border-radius:var(--r); color:var(--gold);
+  font-family:var(--font-b); font-size:.82rem; font-weight:600;
+  cursor:pointer; transition:all .2s; text-align:left; white-space:nowrap;
+}
+.btn-new:hover { background:var(--gold); color:#fff; border-color:var(--gold); }
+.btn-new:disabled { opacity:.5; cursor:not-allowed; }
+
+.sidebar-label { font-size:.65rem; font-weight:600; letter-spacing:.1em; color:var(--ink4); text-transform:uppercase; padding:.4rem .5rem 0; }
+.history-list { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:2px; }
+.history-item {
+  position:relative; padding:.6rem .7rem .6rem .75rem;
+  border-radius:9px; color:var(--ink3); font-size:.8rem;
+  cursor:pointer; transition:all .15s; overflow:hidden;
+  border-left:2px solid transparent;
+  display:flex; align-items:flex-start; justify-content:space-between; gap:.4rem;
+}
+.history-item:hover { background:var(--surface2); color:var(--ink2); }
+.history-item.active { background:var(--accent-dim); color:var(--accent); border-left-color:var(--accent); font-weight:500; }
+.history-content { min-width:0; display:flex; flex-direction:column; gap:.2rem; }
+.history-title { font-weight:600; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.history-item .thread-time { display:block; font-size:.62rem; color:var(--ink4); font-family:var(--font-m); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.history-menu-btn { border:none; background:transparent; color:var(--ink4); font-size:1.1rem; padding:0; line-height:1; cursor:pointer; height:1.8rem; }
+.history-menu-btn:hover { color:var(--accent); }
+.thread-menu-popup { position:absolute; right:.5rem; top:50%; transform:translateY(-50%); background:var(--surface); border:1px solid var(--border); border-radius:9px; box-shadow:var(--sh-md); padding:.3rem 0; z-index:20; min-width:130px; }
+.thread-menu-item { width:100%; text-align:left; border:none; background:none; padding:.5rem .9rem; cursor:pointer; font-size:.8rem; color:var(--ink2); }
+.thread-menu-item:hover { background:var(--surface2); color:var(--ink); }
+.thread-menu-item.danger { color:var(--ruby); }
+.history-empty { padding:.5rem .65rem; font-size:.76rem; color:var(--ink4); font-style:italic; }
+.history-list::-webkit-scrollbar { width:3px; }
+.history-list::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+.sidebar-footer { border-top:1px solid var(--border-soft); padding:.65rem .8rem; display:flex; flex-direction:column; gap:2px; }
+.user-pill { display:flex; align-items:center; gap:.6rem; padding:.45rem .7rem; border-radius:8px; background:var(--surface2); margin-bottom:.25rem; }
+.user-pill-avatar { width:26px; height:26px; border-radius:6px; background:var(--accent-dim); display:flex; align-items:center; justify-content:center; font-size:.68rem; font-weight:700; color:var(--accent); font-family:var(--font-m); flex-shrink:0; }
+.user-pill-name { font-size:.8rem; font-weight:500; color:var(--ink2); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sidebar-action { display:flex; align-items:center; gap:.55rem; padding:.45rem .7rem; border-radius:7px; color:var(--ink3); font-size:.8rem; cursor:pointer; background:none; border:none; font-family:var(--font-b); text-align:left; width:100%; transition:all .15s; white-space:nowrap; }
+.sidebar-action:hover { background:var(--surface2); color:var(--ink); }
+
+/* ═══════════════════════════════════════════════════
+   MAIN
+═══════════════════════════════════════════════════ */
+.main { flex:1; min-height:0; display:flex; flex-direction:column; overflow:hidden; background:var(--bg); }
+
+/* ── Topbar ── */
+.topbar {
+  padding:.75rem 1.4rem;
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  flex-shrink:0; box-shadow:var(--sh-sm); gap:.8rem;
+}
+.topbar-left { display:flex; align-items:center; gap:.9rem; min-width:0; }
+.topbar-title { font-family:var(--font-d); font-size:1rem; font-weight:600; color:var(--ink); letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+/* sidebar toggle button */
+.sidebar-toggle {
+  width:34px; height:34px; border-radius:9px;
+  border:none; background:none;
+  color:var(--ink3); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0; transition:all .2s; font-size:1.2rem;
+}
+.sidebar-toggle:hover { color:var(--accent); transform:scale(1.1); }
+
+.live-pill {
+  display:flex; align-items:center; gap:.35rem;
+  padding:.2rem .55rem; border-radius:999px;
+  background:var(--surface2); border:1px solid var(--border);
+  font-size:.68rem; color:var(--ink3); font-weight:500; white-space:nowrap;
+}
+.live-dot { width:6px; height:6px; border-radius:50%; background:#22a85a; box-shadow:0 0 0 2px rgba(34,168,90,.2); animation:breathe 2.4s ease infinite; }
+@keyframes breathe { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(.85)} }
+
+.topbar-right { display:flex; align-items:center; gap:.5rem; flex-shrink:0; }
+.icon-btn {
+  width:34px; height:34px; border-radius:9px; border:none;
+  background:none; color:var(--ink3);
+  cursor:pointer; display:flex; align-items:center; justify-content:center;
+  font-size:1rem; transition:all .2s; flex-shrink:0;
+}
+.icon-btn:hover { color:var(--gold); transform:scale(1.1); }
+.download-chat-btn {
+  border-radius:9px; border:none;
+  background:none; color:var(--ink3);
+  width:34px; height:34px; cursor:pointer; font-size:1rem;
+  transition:all .2s; display:flex; align-items:center; justify-content:center;
+}
+.download-chat-btn:hover { color:var(--gold); transform:scale(1.1); }
+.download-chat-btn.loading { opacity:.6; cursor:wait; pointer-events:none; }
+
+/* ── Messages ── */
+.messages-area {
+  flex:1; min-height:0; overflow-y:auto; overflow-x:hidden;
+  padding:1.5rem 1.5rem 1.5rem;
+  display:flex; flex-direction:column; gap:1rem;
+  scroll-behavior:smooth;
+}
+.messages-area::-webkit-scrollbar { width:5px; }
+.messages-area::-webkit-scrollbar-thumb { background:var(--accent); border-radius:3px; }
+.messages-area::-webkit-scrollbar-track { background:transparent; }
+
+.msg { max-width:75%; animation:rise .26s cubic-bezier(.4,0,.2,1) both; min-width:0; flex-shrink:0; }
+@keyframes rise { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:none} }
+
+.msg.user { align-self:flex-end; }
+.msg.bot  { align-self:flex-start; max-width:88%; width:88%; }
+.msg.sys  { align-self:center; max-width:60%; }
+
+.bubble { padding:.8rem 1.1rem; border-radius:var(--r); line-height:1.65; font-size:.9rem; box-shadow:var(--sh-sm); }
+.msg.user .bubble { background:linear-gradient(155deg,var(--user-from),var(--user-to)); color:#e8edf5; border-bottom-right-radius:4px; }
+.msg.bot  .bubble { background:var(--surface); color:var(--ink); border:1px solid var(--border); border-bottom-left-radius:4px; }
+.msg.sys  .bubble { background:transparent; border:1px dashed var(--border); color:var(--ink4); font-size:.75rem; font-family:var(--font-m); text-align:center; box-shadow:none; }
+
+.bubble p { margin-bottom:.45rem; }
+.bubble p:last-child { margin-bottom:0; }
+.bubble strong { font-weight:600; color:var(--ink); }
+.bubble ul,.bubble ol { padding-left:1.2rem; margin:.35rem 0; }
+.bubble li { margin-bottom:.15rem; }
+.bubble code { font-family:var(--font-m); font-size:.8em; background:var(--bg2); padding:.1em .3em; border-radius:4px; color:var(--accent); }
+
+.msg-edit-btn { border:none; background:none; color:var(--gold); font-size:.78rem; cursor:pointer; padding:3px 7px; flex-shrink:0; opacity:.7; transition:opacity .15s; font-family:var(--font-b); }
+.msg-edit-btn:hover { opacity:1; }
+
+/* intent tag */
+.intent-tag {
+  display:inline-flex; align-items:center; gap:.25rem;
+  font-size:.62rem; font-weight:700; letter-spacing:.1em;
+  text-transform:uppercase; font-family:var(--font-m);
+  padding:.13rem .5rem; border-radius:4px; margin-bottom:.5rem;
+}
+.intent-tag.SQL { background:var(--accent-dim); color:var(--accent); border:1px solid rgba(28,43,74,.14); }
+.intent-tag.RAG { background:var(--gold-dim); color:var(--gold); border:1px solid var(--gold-border); }
+
+/* thinking */
+.thinking-bubble { display:flex; align-items:center; gap:.6rem; color:var(--ink3); font-size:.85rem; font-style:italic; }
+.dot-wave { display:flex; gap:3px; align-items:center; }
+.dot-wave span { width:5px; height:5px; border-radius:50%; background:var(--gold); animation:wave 1.3s ease infinite; }
+.dot-wave span:nth-child(2) { animation-delay:.15s; }
+.dot-wave span:nth-child(3) { animation-delay:.3s; }
+@keyframes wave { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+/* stats row */
+.stats-row { display:flex; gap:.4rem; flex-wrap:wrap; margin-top:.55rem; }
+.stat-tag { display:inline-flex; align-items:center; gap:.25rem; background:var(--surface2); border:1px solid var(--border); border-radius:5px; padding:.15rem .55rem; font-family:var(--font-m); font-size:.67rem; color:var(--ink3); }
+
+/* sources */
+.sources-reveal { margin-top:.7rem; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.sources-reveal summary { padding:.4rem .85rem; background:var(--bg2); cursor:pointer; list-style:none; font-size:.72rem; color:var(--ink3); font-family:var(--font-m); font-weight:500; transition:background .15s; }
+.sources-reveal summary:hover { background:var(--border-soft); }
+.sources-reveal summary::marker,.sources-reveal summary::-webkit-details-marker { display:none; }
+.sources-body { padding:.55rem .85rem; display:flex; flex-wrap:wrap; gap:.3rem; }
+.source-tag { background:var(--surface); border:1px solid var(--border); border-radius:5px; padding:.15rem .55rem; font-family:var(--font-m); font-size:.7rem; color:var(--ink3); }
+
+/* ═══════════════════════════════════════════════════
+   TABLE CARD — narrower, cleaner
+═══════════════════════════════════════════════════ */
+.table-card {
+  margin-top:.35rem;
+  border:1px solid var(--border);
+  border-radius:var(--r); overflow:hidden;
+  width:100%; max-width:820px;      /* ← narrower */
+  box-shadow:var(--sh-sm); background:var(--surface);
+  flex-shrink:0; align-self:flex-start;
+}
+
+/* table header bar */
+.table-head-bar {
+  padding:.5rem .9rem;
+  background:linear-gradient(90deg, var(--accent) 0%, #243660 100%);
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:.4rem;
+}
+.table-head-bar .tbl-title {
+  display:flex; align-items:center; gap:.5rem;
+  font-family:var(--font-m); font-size:.7rem; font-weight:600;
+  color:rgba(255,255,255,.9); letter-spacing:.04em;
+}
+.table-head-bar .tbl-icon { font-size:.85rem; }
+.table-download-btn {
+  border-radius:6px; border:none;
+  background:none; color:rgba(255,255,255,.9);
+  width:28px; height:28px; cursor:pointer; font-size:.9rem;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .2s;
+}
+.table-download-btn:hover { color:#fff; transform:scale(1.15); }
+.table-actions { display:flex; gap:.6rem; align-items:center; }
+.table-chart-container { 
+  background:var(--bg); 
+  border-bottom:1px solid var(--border);
+  overflow:hidden;
+  transition:all .3s ease;
+}
+.table-chart-container div[id^="dyn_plt_"] { margin-bottom:1rem; }
+.table-chart-container div[id^="dyn_plt_"]:last-child { margin-bottom:0; }
+.dashboard-filter-bar {
+  display:flex; flex-wrap:wrap; align-items:center; gap:.45rem;
+  padding:.5rem .65rem; margin-bottom:.65rem;
+  background:var(--surface2); border:1px solid var(--border); border-radius:9px;
+}
+.dashboard-filter-bar .dfb-label {
+  font-family:var(--font-m); font-size:.62rem; font-weight:700;
+  text-transform:uppercase; letter-spacing:.06em; color:var(--ink4);
+}
+.dashboard-filter-chip {
+  display:inline-flex; align-items:center; gap:.35rem;
+  padding:.2rem .55rem; border-radius:999px;
+  background:var(--gold-dim); border:1px solid var(--gold-border);
+  font-size:.72rem; color:var(--ink2);
+}
+.dashboard-filter-chip button {
+  border:none; background:none; cursor:pointer; color:var(--ink4);
+  font-size:.85rem; line-height:1; padding:0;
+}
+.dashboard-filter-chip button:hover { color:var(--ruby); }
+.dfb-clear {
+  margin-left:auto; padding:.22rem .55rem; border-radius:6px;
+  border:1px solid var(--border); background:var(--surface);
+  font-size:.72rem; cursor:pointer; color:var(--ink3);
+}
+.dfb-clear:hover { border-color:var(--accent); color:var(--accent); }
+.dashboard-grid {
+  display:grid;
+  grid-template-columns:repeat(2, minmax(0, 1fr));
+  gap:.75rem;
+  align-items:stretch;
+}
+.dashboard-panel {
+  border:1px solid var(--border);
+  border-radius:10px;
+  background:var(--surface);
+  padding:.5rem;
+  min-height:300px;
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.dashboard-panel-title {
+  font-family:var(--font-m);
+  font-size:.68rem;
+  color:var(--ink3);
+  margin:0 0 .4rem;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  flex-shrink:0;
+}
+.dashboard-panel .chart-plot-area,
+.dashboard-panel .plot-wrap {
+  flex:1; min-height:260px; width:100%; position:relative;
+}
+.dashboard-panel [id^="dyn_plt_"] {
+  height:100% !important; min-height:260px; width:100% !important;
+  margin-bottom:0 !important;
+}
+.table-chart-container.dashboard-mode { padding:12px 10px 10px; max-height:72vh; overflow-y:auto; }
+
+/* ── Chart panel mini-bar (inside table chart container) ── */
+.chart-panel-bar {
+  display:flex; align-items:center; gap:.5rem;
+  padding:.35rem .7rem .35rem .8rem;
+  margin-bottom:.5rem;
+  background:var(--surface2); border-radius:8px;
+  border:1px solid var(--border);
+  font-family:var(--font-m); font-size:.72rem; font-weight:600;
+  letter-spacing:.04em; color:var(--ink3);
+}
+.chart-panel-bar .cpb-icon { font-size:.9rem; }
+.chart-panel-bar .cpb-label { flex:1; color:var(--ink2); }
+.chart-panel-bar .cpb-minimize {
+  display:flex; align-items:center; justify-content:center;
+  width:22px; height:22px; border-radius:6px;
+  border:1px solid var(--border); background:var(--surface);
+  cursor:pointer; color:var(--ink3); font-size:.8rem; line-height:1;
+  transition:background .12s, color .12s; flex-shrink:0;
+}
+.chart-panel-bar .cpb-minimize:hover { background:var(--surface3,var(--border)); color:var(--ink); }
+
+/* ── Chart type dropdown ── */
+.chart-type-dropdown { position:relative; display:inline-flex; }
+.chart-type-menu {
+  position:absolute; top:calc(100% + 8px); right:0;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:11px; box-shadow:var(--sh-md); z-index:50;
+  min-width:180px; padding:.35rem 0;
+  display:none; animation:menuPop .15s cubic-bezier(.4,0,.2,1);
+}
+@keyframes menuPop { from{opacity:0;transform:translateY(-6px) scale(.97)} to{opacity:1;transform:none} }
+.chart-type-menu.open { display:block; }
+.chart-type-menu-header {
+  font-size:.6rem; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink4);
+  padding:.3rem .9rem .2rem; font-family:var(--font-m);
+}
+.chart-type-menu-divider { height:1px; background:var(--border); margin:.3rem 0; }
+.chart-type-menu-item {
+  display:flex; align-items:center; gap:.6rem;
+  width:100%; padding:.5rem .9rem;
+  border:none; background:none; cursor:pointer;
+  font-family:var(--font-b); font-size:.8rem; color:var(--ink2);
+  text-align:left; transition:background .12s;
+}
+.chart-type-menu-item:hover { background:var(--surface2); color:var(--ink); }
+.chart-type-menu-item.active { color:var(--gold); font-weight:600; background:var(--gold-dim); }
+.chart-type-menu-item .cmi-icon { font-size:1rem; line-height:1; flex-shrink:0; }
+.chart-type-menu-item .cmi-label { flex:1; }
+.chart-type-menu-item .cmi-check { font-size:.75rem; color:var(--gold); margin-left:auto; }
+.chart-type-menu-item:disabled, .chart-type-menu-item[disabled] { opacity:.35; cursor:not-allowed; pointer-events:none; }
+
+/* ── Download dropdown (shared style with chart menu) ── */
+.download-dropdown { position:relative; display:inline-flex; }
+.download-menu {
+  position:absolute; top:calc(100% + 8px); right:0;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:11px; box-shadow:var(--sh-md); z-index:50;
+  min-width:200px; padding:.35rem 0;
+  display:none; animation:menuPop .15s cubic-bezier(.4,0,.2,1);
+}
+.download-menu.open { display:block; }
+.download-menu-header {
+  font-size:.6rem; font-weight:700; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--ink4);
+  padding:.3rem .9rem .2rem; font-family:var(--font-m);
+}
+.download-menu-divider { height:1px; background:var(--border); margin:.3rem 0; }
+.download-menu-item {
+  display:flex; align-items:center; gap:.6rem;
+  width:100%; padding:.5rem .9rem;
+  border:none; background:none; cursor:pointer;
+  font-family:var(--font-b); font-size:.8rem; color:var(--ink2);
+  text-align:left; transition:background .12s;
+}
+.download-menu-item:hover { background:var(--surface2); color:var(--ink); }
+.download-menu-item .dmi-icon { font-size:1rem; line-height:1; flex-shrink:0; }
+
+/* ── KPI strip ── */
+.kpi-strip {
+  display:flex; gap:.55rem; padding:8px 10px 6px;
+  overflow-x:auto; border-bottom:1px solid var(--border);
+  scrollbar-width:none;
+}
+.kpi-strip::-webkit-scrollbar { display:none; }
+.kpi-card {
+  flex-shrink:0; min-width:150px; max-width:190px;
+  background:var(--accent); border:1px solid var(--surface2);
+  border-radius:10px; padding:.45rem .7rem;
+  transition:border-color .15s;
+  display:grid; grid-template-columns:30px 1fr; gap:.55rem; align-items:center;
+}
+.kpi-card:hover { border-color:var(--gold); }
+.kpi-gauge {
+  width:30px; height:30px; border-radius:50%;
+  background:conic-gradient(var(--gold) var(--gauge, 0%), rgba(255,255,255,0.18) 0);
+  position:relative; flex-shrink:0;
+}
+.kpi-gauge::after {
+  content:""; position:absolute; inset:5px; border-radius:50%;
+  background:var(--accent);
+}
+.kpi-main { min-width:0; }
+.kpi-card-label {
+  font-size:.6rem; font-weight:700; text-transform:uppercase;
+  letter-spacing:.09em; color:var(--ink4); font-family:var(--font-m);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.kpi-card-value {
+  font-size:1.05rem; font-weight:700; color:var(--ink);
+  font-family:var(--font-b); margin-top:.12rem;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.kpi-card-sub {
+  font-size:.63rem; color:var(--ink4); font-family:var(--font-m);
+  margin-top:.08rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+
+/* KPIs inside table header */
+.table-head-bar .kpi-strip {
+  border-bottom:none; padding: 0.2rem 0; margin-top: 0.4rem; width: 100%;
+}
+.table-head-bar .kpi-card {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  min-width: 110px;
+}
+.table-head-bar .kpi-gauge {
+  background:conic-gradient(var(--gold) var(--gauge, 0%), rgba(255,255,255,0.22) 0);
+}
+.table-head-bar .kpi-gauge::after { background:rgba(255,255,255,0.1); }
+.table-head-bar .kpi-card-label { color: rgba(255,255,255,0.6); }
+.table-head-bar .kpi-card-value { color: #fff; font-size: 0.95rem; }
+.table-head-bar .kpi-card-sub { color: rgba(255,255,255,0.45); }
+.table-head-bar .kpi-card:hover { border-color: var(--gold); background: rgba(255,255,255,0.12); }
+
+/* ── Slicer panel ── */
+.slicer-panel {
+  display:flex; gap:.5rem; flex-wrap:wrap; align-items:center;
+  padding:.45rem .6rem; margin-bottom:.55rem;
+  background:var(--surface2); border:1px solid var(--border);
+  border-radius:9px;
+}
+.slicer-group { display:flex; align-items:center; gap:.3rem; }
+.slicer-label {
+  font-size:.62rem; font-weight:700; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--ink4); font-family:var(--font-m);
+  white-space:nowrap;
+}
+.slicer-select {
+  font-family:var(--font-b); font-size:.75rem; color:var(--ink2);
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:6px; padding:.22rem .45rem; cursor:pointer;
+  outline:none; max-width:155px;
+}
+.slicer-select:focus { border-color:var(--accent); }
+
+.table-scroll-x { overflow-x:auto; overflow-y:auto; max-height:320px; }
+.table-scroll-x::-webkit-scrollbar { width:5px; height:5px; }
+.table-scroll-x::-webkit-scrollbar-thumb { background:var(--accent); border-radius:3px; }
+.table-scroll-x::-webkit-scrollbar-corner { background:transparent; }
+
+table { border-collapse:collapse; width:max-content; min-width:100%; }
+thead tr { position:sticky; top:0; z-index:2; }
+th {
+  padding:.45rem .85rem; text-align:left;
+  background:var(--bg2);
+  font-family:var(--font-b); font-size:.70rem; font-weight:800;
+  letter-spacing:.05em; color:var(--accent);
+  border-bottom:2px solid var(--border); white-space:nowrap;
+}
+td {
+  padding:.42rem .85rem; font-size:.8rem; color:var(--ink2);
+  border-bottom:1px solid var(--border-soft); white-space:nowrap;
+}
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:var(--surface2); }
+tr:nth-child(even) td { background:var(--bg2); }
+tr:nth-child(even):hover td { background:var(--surface2); }
+
+.table-footer-bar {
+  padding:.4rem .9rem;
+  background:var(--surface2); border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between;
+  font-family:var(--font-m); font-size:.68rem; color:var(--ink3);
+}
+.pg-btns { display:flex; gap:.25rem; }
+.pg-btn {
+  padding:.18rem .55rem; border-radius:5px; border:1px solid var(--border);
+  background:var(--surface); color:var(--ink2);
+  font-family:var(--font-m); font-size:.68rem; cursor:pointer; transition:all .15s;
+}
+.pg-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+.pg-btn:disabled { opacity:.3; cursor:default; }
+.pg-input {
+  width:40px; padding:2px 4px; border:1px solid var(--border); 
+  border-radius:4px; font-family:var(--font-m); font-size:0.7rem; 
+  text-align:center; background:var(--surface); color:var(--ink);
+  outline:none;
+}
+.pg-input:focus { border-color: var(--accent); }
+
+/* ═══════════════════════════════════════════════════
+   CHART CARD — narrower, cleaner header
+═══════════════════════════════════════════════════ */
+.chart-card {
+  margin-top:.35rem;
+  border:1px solid var(--border); border-radius:var(--r);
+  overflow:hidden; align-self:flex-start;
+  width:100%; max-width:820px;      /* ← narrower */
+  background:var(--surface); box-shadow:var(--sh-sm); flex-shrink:0;
+}
+
+.chart-topbar {
+  padding:.5rem .9rem;
+  background:linear-gradient(90deg, #1a3a2a 0%, #1c3d30 100%);
+  display:flex; align-items:center; gap:.5rem;
+}
+.chart-topbar .chart-icon { font-size:.85rem; }
+.chart-topbar .chart-label {
+  font-family:var(--font-m); font-size:.7rem; font-weight:600;
+  color:rgba(255,255,255,.9); letter-spacing:.04em; flex:1;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.chart-topbar .chart-type-badge {
+  font-family:var(--font-m); font-size:.62rem; font-weight:600;
+  padding:.1rem .45rem; border-radius:4px;
+  background:rgba(255,255,255,.12); color:rgba(255,255,255,.7);
+  border:1px solid rgba(255,255,255,.15); text-transform:uppercase;
+  letter-spacing:.06em; white-space:nowrap;
+}
+.chart-body { padding:.4rem .6rem .6rem; }
+
+/* sql reveal */
+.sql-reveal { margin-top:.7rem; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
+.sql-reveal summary { padding:.45rem .85rem; background:var(--bg2); cursor:pointer; list-style:none; font-family:var(--font-m); font-size:.72rem; color:var(--accent); font-weight:500; display:flex; align-items:center; gap:.4rem; user-select:none; transition:background .15s; }
+.sql-reveal summary:hover { background:var(--border-soft); }
+.sql-reveal summary::marker,.sql-reveal summary::-webkit-details-marker { display:none; }
+.sql-reveal[open] summary { border-bottom:1px solid var(--border); }
+.sql-reveal pre { margin:0; padding:.8rem .9rem; background:var(--bg); font-family:var(--font-m); font-size:.75rem; line-height:1.65; color:var(--ink2); overflow-x:auto; }
+
+/* ═══════════════════════════════════════════════════
+   INPUT ZONE
+═══════════════════════════════════════════════════ */
+.input-zone {
+  padding:.85rem 1.4rem 1rem;
+  background:var(--surface); border-top:1px solid var(--border);
+  flex-shrink:0; min-height:0;
+  box-shadow:0 -4px 20px rgba(0,0,0,.04);
+}
+.composer {
+  display:flex; align-items:flex-end; gap:.55rem;
+  background:var(--bg); border:1.5px solid var(--border);
+  border-radius:13px; padding:.5rem .5rem .5rem 1rem;
+  transition:border-color .25s,box-shadow .25s;
+}
+.composer:focus-within { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+#msg-input {
+  flex:1; background:none; border:none; outline:none;
+  color:var(--ink); font-family:var(--font-b); font-size:.9rem;
+  resize:none; max-height:120px; overflow-y:auto; line-height:1.55; padding:.18rem 0;
+}
+#msg-input::placeholder { color:var(--ink4); }
+#msg-input:disabled { opacity:.5; cursor:not-allowed; }
+.composer-actions { display:flex; align-items:center; gap:.3rem; flex-shrink:0; }
+#send-btn {
+  display:flex; align-items:center; gap:.4rem;
+  padding:0 1rem; height:36px; border-radius:9px; border:none;
+  background:var(--accent); color:#e8edf5;
+  font-family:var(--font-b); font-size:.82rem; font-weight:600;
+  cursor:pointer; transition:all .2s; flex-shrink:0; letter-spacing:.01em;
+}
+#send-btn:hover:not(:disabled) { background:var(--user-to); transform:translateY(-1px); box-shadow:var(--sh-md); }
+#send-btn:disabled { background:var(--border); color:var(--ink4); cursor:not-allowed; transform:none; box-shadow:none; }
+
+#no-thread-banner {
+  display:none; align-items:center; justify-content:center; gap:.5rem;
+  padding:.55rem .9rem; background:var(--gold-dim); border:1px solid var(--gold-border);
+  border-radius:8px; margin-bottom:.55rem; font-size:.8rem; color:var(--gold); font-weight:500;
+}
+#no-thread-banner.show { display:flex; }
+
+/* ═══════════════════════════════════════════════════
+   MISC & SCROLLBARS
+═══════════════════════════════════════════════════ */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-thumb { background:var(--accent); border-radius:10px; }
+::-webkit-scrollbar-track { background:rgba(0,0,0,0.05); }
+
+/* Ensure all scrollable areas use the same scrollbar style */
+.messages-area::-webkit-scrollbar-thumb,
+.history-list::-webkit-scrollbar-thumb,
+.table-scroll-x::-webkit-scrollbar-thumb,
+#msg-input::-webkit-scrollbar-thumb {
+  background:var(--accent);
+}
+
+.divider {
+  display:flex; align-items:center; gap:.7rem;
+  color:var(--ink4); font-size:.68rem; font-family:var(--font-m);
+  margin:.25rem 0; flex-shrink:0;
+}
+.divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── Overlay for mobile sidebar ── */
+.sidebar-overlay {
+  display:none;
+  position:fixed; inset:0; z-index:9;
+  background:rgba(0,0,0,.35);
+  backdrop-filter:blur(2px);
+}
+.sidebar-overlay.show { display:block; }
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .sidebar {
+    position:fixed; top:0; left:0; bottom:0; z-index:10;
+  }
+  .sidebar.collapsed { transform:translateX(calc(-1 * var(--sidebar-w))); width:var(--sidebar-w); min-width:var(--sidebar-w); }
+  .msg.bot { max-width:96%; width:96%; }
+  .table-card,.chart-card { max-width:100%; }
+}
+@media (max-width: 600px) {
+  .topbar { padding:.65rem .9rem; }
+  .topbar-title { font-size:.88rem; }
+  .messages-area { padding:1rem .8rem; }
+  .input-zone { padding:.65rem .8rem .8rem; }
+  .msg { max-width:92%; }
+  .msg.bot { max-width:100%; width:100%; }
+  .download-chat-btn span { display:none; }
+  .topbar-right { gap: 0.2rem; }
+  .topbar-left { gap: 0.5rem; }
+  .brand-name { font-size: 1.1rem; }
+  .brand-emblem { width: 36px; height: 36px; font-size: 1.4rem; }
+}
+
+/* Theme toggle icons */
+#theme-btn .sun-icon { display: none; }
+#theme-btn .moon-icon { display: block; }
+[data-theme="dark"] #theme-btn .sun-icon { display: block; }
+[data-theme="dark"] #theme-btn .moon-icon { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-overlay">
+  <div class="login-brand">
+    <div class="login-emblem">📈</div>
+    <!-- <div class="login-title">MarketLen</div> -->
+    <div class="login-sub">MarketLens</div>
+  </div>
+  <div class="login-card">
+    <h3>Select your account</h3>
+    <button class="user-btn" onclick="login('dev-token-arjun','arjun_singh','Analyst')">
+      <div class="user-avatar av-1">AS</div>
+      <div class="user-info"><span class="user-name">Arjun Singh</span><span class="user-role">Market Analyst · dev-token-arjun</span></div>
+      <span class="user-arrow">→</span>
+    </button>
+    <button class="user-btn" onclick="login('dev-token-priya','priya_nair','Senior Analyst')">
+      <div class="user-avatar av-2">PN</div>
+      <div class="user-info"><span class="user-name">Priya Nair</span><span class="user-role">Senior Analyst · dev-token-priya</span></div>
+      <span class="user-arrow">→</span>
+    </button>
+    <button class="user-btn" onclick="login('dev-token-vikram','vikram_rao','Director')">
+      <div class="user-avatar av-3">VR</div>
+      <div class="user-info"><span class="user-name">Vikram Rao</span><span class="user-role">Portfolio Director · dev-token-vikram</span></div>
+      <span class="user-arrow">→</span>
+    </button>
+    <div class="login-footer">DEV MODE · Dummy authentication</div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell">
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-lockup">
+        <div class="brand-emblem">📈</div>
+        <!-- <span class="brand-name">MarketLen</span> -->
+      </div>
+    </div>
+    <div class="sidebar-body">
+      <button class="btn-new" id="btn-new" onclick="startNewConversation()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Conversation
+      </button>
+      <div class="sidebar-label">Conversations</div>
+      <div class="history-list" id="history-list">
+        <div class="history-empty">No conversations yet</div>
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="user-pill">
+        <div class="user-pill-avatar" id="user-avatar-pill">—</div>
+        <span class="user-pill-name" id="user-name-pill">Not signed in</span>
+      </div>
+      <button class="sidebar-action" onclick="logout()">&nbsp;Sign out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="sidebar-toggle" id="sidebar-toggle" onclick="toggleSidebar()" title="Toggle sidebar">☰</button>
+        <span class="topbar-title">MarketLens</span>
+        <div class="live-pill">
+          <span class="live-dot"></span>
+          <span id="status-label">Online</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button class="download-chat-btn" id="download-chat-btn" onclick="downloadChatAsPdf()" title="Download conversation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        </button>
+        <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme" id="theme-btn">
+          <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="4.22" x2="19.78" y2="5.64"/></svg>
+          <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="messages-area" id="messages-area">
+      <div class="divider">start of conversation</div>
+      <div class="msg bot">
+        <div class="bubble">
+          Welcome to <strong>MarketLens</strong> — your Stock Market Intelligence Dashboard.<br/><br/>
+          Click <strong>New Conversation</strong> to begin, or select a previous conversation from the sidebar.
+        </div>
+      </div>
+    </div>
+
+    <div class="input-zone">
+      <div id="no-thread-banner">⚡ Start a new conversation to chat</div>
+      <div class="composer">
+        <textarea id="msg-input" rows="1"
+          placeholder="Ask about stocks, sectors, market cap, PE ratio, volume, or price trends…"
+          onkeydown="handleKey(event)" oninput="autoGrow(this)"></textarea>
+        <div class="composer-actions">
+          <button id="send-btn" onclick="sendMessage()">
+            Send
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+const API_BASE = "";
+
+let authToken       = localStorage.getItem('rk_token')  || null;
+let currentUser     = localStorage.getItem('rk_user')   || null;
+let currentThreadId = localStorage.getItem('rk_thread') || null;
+let chartIdx        = 0;
+let editingMsgElement   = null;
+let editingOriginalText = '';
+let sidebarOpen = localStorage.getItem('rk_sidebar') !== 'closed';
+
+const threadTitles   = JSON.parse(localStorage.getItem('rk_thread_titles')  || '{}');
+const deletedThreads = new Set(JSON.parse(localStorage.getItem('rk_thread_deleted') || '[]'));
+
+const msgArea  = document.getElementById('messages-area');
+const msgInput = document.getElementById('msg-input');
+const sendBtn  = document.getElementById('send-btn');
+const sendBtnDefaultHtml = sendBtn ? sendBtn.innerHTML : 'Send';
+const sendBtnIconHtml    = sendBtnDefaultHtml.includes('<svg') ? sendBtnDefaultHtml.slice(sendBtnDefaultHtml.indexOf('<svg')) : '';
+
+/* ── THEME ── */
+(function initTheme() {
+  const saved = localStorage.getItem('rk_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
+function toggleTheme() {
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('rk_theme', next);
+}
+
+/* ── SIDEBAR TOGGLE ── */
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  applySidebarState();
+  localStorage.setItem('rk_sidebar', sidebarOpen ? 'open' : 'closed');
+}
+function closeSidebar() {
+  sidebarOpen = false;
+  applySidebarState();
+  localStorage.setItem('rk_sidebar', 'closed');
+}
+function applySidebarState() {
+  const sb  = document.getElementById('sidebar');
+  const ov  = document.getElementById('sidebar-overlay');
+  const isMobile = window.innerWidth <= 900;
+  if (sidebarOpen) {
+    sb.classList.remove('collapsed');
+    if (isMobile) ov.classList.add('show');
+  } else {
+    sb.classList.add('collapsed');
+    ov.classList.remove('show');
+  }
+}
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 900) document.getElementById('sidebar-overlay').classList.remove('show');
+  applySidebarState();
+});
+
+/* ── AUTH ── */
+function apiHeaders(extra = {}) {
+  return { 'Content-Type':'application/json', 'Authorization':`Bearer ${authToken}`, ...extra };
+}
+
+function login(token, username, role) {
+  authToken   = token;
+  currentUser = username;
+  localStorage.setItem('rk_token', token);
+  localStorage.setItem('rk_user',  username);
+
+  const initials = username.split('_').map(p => p[0].toUpperCase()).join('');
+  document.getElementById('user-avatar-pill').textContent = initials;
+  document.getElementById('user-name-pill').textContent   = username.replace('_',' ');
+
+  const overlay = document.getElementById('login-overlay');
+  overlay.classList.add('hidden');
+  setTimeout(() => overlay.style.display = 'none', 300);
+
+  applySidebarState();
+  loadThreadList();
+  if (currentThreadId) loadThreadHistory(currentThreadId); else setNoThreadState();
+}
+
+function logout() {
+  authToken = null; currentUser = null; currentThreadId = null;
+  localStorage.removeItem('rk_token'); localStorage.removeItem('rk_user'); localStorage.removeItem('rk_thread');
+  const overlay = document.getElementById('login-overlay');
+  overlay.style.display = 'flex'; overlay.classList.remove('hidden');
+  resetChatArea();
+  document.getElementById('history-list').innerHTML   = '<div class="history-empty">No conversations yet</div>';
+  document.getElementById('user-avatar-pill').textContent = '—';
+  document.getElementById('user-name-pill').textContent   = 'Not signed in';
+}
+
+/* ── THREADS ── */
+async function startNewConversation() {
+  if (!authToken) return;
+  const btn = document.getElementById('btn-new');
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    const res  = await fetch(API_BASE + '/threads/new', { method:'POST', headers:apiHeaders() });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    currentThreadId = data.thread_id;
+    localStorage.setItem('rk_thread', currentThreadId);
+    resetChatArea(); addDivider('new conversation'); hideBanner();
+    await loadThreadList(); highlightActiveThread(currentThreadId);
+    if (window.innerWidth <= 900) closeSidebar();
+  } catch (err) { addError('Could not create conversation: ' + err.message); }
+  finally {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Conversation`;
+  }
+}
+
+async function loadThreadList() {
+  if (!authToken) return;
+  try {
+    const res = await fetch(API_BASE + '/threads', { headers:apiHeaders() });
+    if (!res.ok) return;
+    renderThreadList(await res.json());
+  } catch(e) {
+    document.getElementById('history-list').innerHTML = '<div class="history-empty">No conversations yet</div>';
+  }
+}
+
+function saveThreadOverrides() {
+  localStorage.setItem('rk_thread_titles',  JSON.stringify(threadTitles));
+  localStorage.setItem('rk_thread_deleted', JSON.stringify([...deletedThreads]));
+}
+function getThreadTitle(t) { return threadTitles[t.thread_id] || t.title || 'New conversation'; }
+
+function renderThreadList(threads) {
+  const list = document.getElementById('history-list');
+  list.innerHTML = '';
+  const visible = threads.filter(t => !deletedThreads.has(t.thread_id));
+  if (!visible.length) { list.innerHTML = '<div class="history-empty">No conversations yet</div>'; return; }
+  visible.forEach(t => {
+    const item = document.createElement('div');
+    item.className = 'history-item' + (t.thread_id === currentThreadId ? ' active' : '');
+    item.dataset.threadId = t.thread_id;
+    const textWrap = document.createElement('div'); textWrap.className = 'history-content';
+    const title = document.createElement('span'); title.className = 'history-title'; title.textContent = getThreadTitle(t);
+    const time  = document.createElement('span'); time.className  = 'thread-time';    time.textContent  = formatTime(t.updated_at);
+    textWrap.appendChild(title); textWrap.appendChild(time); item.appendChild(textWrap);
+    if (t.thread_id !== currentThreadId) {
+      const menuBtn = document.createElement('button');
+      menuBtn.className = 'history-menu-btn'; menuBtn.type = 'button'; menuBtn.title = 'Thread actions'; menuBtn.innerHTML = '&#8942;';
+      menuBtn.addEventListener('click', ev => { ev.stopPropagation(); openThreadMenu(ev.currentTarget, t); });
+      item.appendChild(menuBtn);
+    }
+    item.addEventListener('click', () => { switchThread(t.thread_id); if (window.innerWidth <= 900) closeSidebar(); });
+    list.appendChild(item);
+  });
+}
+
+function highlightActiveThread(threadId) {
+  document.querySelectorAll('.history-item').forEach(el => el.classList.toggle('active', el.dataset.threadId === threadId));
+}
+async function switchThread(threadId) {
+  if (threadId === currentThreadId) return;
+  currentThreadId = threadId; localStorage.setItem('rk_thread', threadId);
+  highlightActiveThread(threadId); await loadThreadHistory(threadId);
+}
+
+function openThreadMenu(button, thread) {
+  document.querySelector('.thread-menu-popup')?.remove();
+  const popup = document.createElement('div'); popup.className = 'thread-menu-popup';
+  popup.innerHTML = `<button type="button" class="thread-menu-item" data-action="rename">Rename</button><button type="button" class="thread-menu-item danger" data-action="delete">Delete</button>`;
+  popup.querySelector('[data-action="rename"]').addEventListener('click', () => { popup.remove(); renameThread(thread.thread_id); });
+  popup.querySelector('[data-action="delete"]').addEventListener('click', () => { popup.remove(); deleteThread(thread.thread_id); });
+  button.parentElement.appendChild(popup);
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.thread-menu-popup') && !e.target.closest('.history-menu-btn'))
+    document.querySelectorAll('.thread-menu-popup').forEach(el => el.remove());
+});
+
+function renameThread(threadId) {
+  const title = prompt('New name:'); if (!title) return;
+  threadTitles[threadId] = title.trim(); saveThreadOverrides(); loadThreadList();
+}
+function deleteThread(threadId) {
+  if (!confirm('Delete this conversation?')) return;
+  deletedThreads.add(threadId); saveThreadOverrides();
+  if (threadId === currentThreadId) { currentThreadId = null; localStorage.removeItem('rk_thread'); resetChatArea(); setNoThreadState(); }
+  loadThreadList();
+}
+
+async function loadThreadHistory(threadId) {
+  if (!authToken || !threadId) return;
+  resetChatArea(); addSys('Loading conversation…');
+  try {
+    const res = await fetch(`${API_BASE}/threads/${threadId}/history`, { headers:apiHeaders() });
+    if (res.status === 404 || res.status === 403) { currentThreadId = null; localStorage.removeItem('rk_thread'); resetChatArea(); setNoThreadState(); return; }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    resetChatArea(); hideBanner();
+    if (!data.messages.length) { addDivider('new conversation'); return; }
+    addDivider('conversation loaded');
+    data.messages.forEach(m => {
+      if (m.role === 'user') addMsg(m.content, 'user', m.message_id);
+      else if (m.role === 'assistant') renderHistoryMessage(m);
+    });
+    msgArea.scrollTop = msgArea.scrollHeight;
+  } catch(err) { addError('Could not load history: ' + err.message); }
+}
+
+function renderHistoryMessage(m) {
+  const wrap = document.createElement('div'); wrap.className = 'msg bot';
+  const bbl  = document.createElement('div'); bbl.className  = 'bubble';
+  if (m.intent) {
+    const tag = document.createElement('div');
+    tag.className = 'intent-tag ' + (m.intent === 'SQL' ? 'SQL' : 'RAG');
+    tag.textContent = m.intent === 'SQL' ? 'Response' : 'Market Lookup';
+    bbl.appendChild(tag); bbl.appendChild(document.createElement('br'));
+  }
+  const resp = document.createElement('div'); resp.innerHTML = marked.parse(m.content || '(no response)');
+  bbl.appendChild(resp); wrap.appendChild(bbl); msgArea.appendChild(wrap);
+  /* individual chart divs disabled — charts are now on-demand via table chart dropdown
+  if (m.chart_json) { 
+    try { 
+      const p = typeof m.chart_json === 'string' ? JSON.parse(m.chart_json) : m.chart_json; 
+      if (Array.isArray(p)) { p.forEach(cj => renderChart(cj)); }
+      else if (p) { renderChart(p); }
+    } catch(e){} 
+  }
+  */
+  if (m.columns?.length && m.rows?.length) renderTable(m.columns, m.rows);
+}
+
+/* ── UI STATE ── */
+function setNoThreadState() { msgInput.disabled = true; sendBtn.disabled = true; document.getElementById('no-thread-banner').classList.add('show'); }
+function hideBanner()       { msgInput.disabled = false; sendBtn.disabled = false; document.getElementById('no-thread-banner').classList.remove('show'); }
+function resetChatArea()    { msgArea.innerHTML = ''; }
+function formatTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso), now = new Date(), diff = now - d;
+  if (diff < 60000)    return 'just now';
+  if (diff < 3600000)  return Math.floor(diff/60000)   + 'm ago';
+  if (diff < 86400000) return Math.floor(diff/3600000) + 'h ago';
+  return d.toLocaleDateString('en-IN', { day:'numeric', month:'short' });
+}
+
+/* ── INPUT ── */
+function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+function autoGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function setLoading(on) {
+  sendBtn.disabled = on; msgInput.disabled = on;
+  document.getElementById('status-label').textContent = on ? 'Processing…' : 'Online';
+}
+
+function toggleMessageEdit(msgElement) {
+  const bubble = msgElement.querySelector('.bubble');
+  if (!bubble || !msgElement.classList.contains('user')) return;
+  if (editingMsgElement === msgElement) { 
+    clearEditingState(); 
+    msgInput.value = ''; 
+    msgInput.style.height = 'auto'; 
+    msgInput.blur(); 
+    return; 
+  }
+  if (editingMsgElement) clearEditingState();
+  editingMsgElement = msgElement;
+  editingOriginalText = bubble.textContent.trim();
+  msgInput.value = editingOriginalText;
+  autoGrow(msgInput);
+  msgInput.focus();
+  msgElement.classList.add('editing');
+  if (sendBtn) sendBtn.innerHTML = 'Update ' + sendBtnIconHtml;
+  bubble.style.border = '2px dashed var(--gold)'; 
+  bubble.style.padding = '10px 12px';
+  const editBtn = msgElement.querySelector('.msg-edit-btn');
+  if (editBtn) editBtn.textContent = '✖';
+}
+
+function clearEditingState() {
+  if (!editingMsgElement) return;
+  const editBtn = editingMsgElement.querySelector('.msg-edit-btn');
+  if (editBtn) editBtn.textContent = 'EDIT';
+  const bubble = editingMsgElement.querySelector('.bubble');
+  if (bubble) { 
+    bubble.style.border = ''; 
+    bubble.style.padding = ''; 
+  }
+  editingMsgElement.classList.remove('editing');
+  editingMsgElement = null;
+  editingOriginalText = '';
+  msgInput.value = '';
+  msgInput.style.height = 'auto';
+  if (sendBtn) sendBtn.innerHTML = sendBtnDefaultHtml;
+}
+
+/* ── SEND ── */
+async function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text || !authToken || !currentThreadId) return;
+
+  if (editingMsgElement) {
+    const mid = editingMsgElement.dataset.messageId;
+    if (mid) {
+      // Truncate backend history and wait for it
+      try {
+        await fetch(`${API_BASE}/threads/${currentThreadId}/truncate/${mid}`, { method:'DELETE', headers:apiHeaders() });
+      } catch(e) { console.error('Truncate failed', e); }
+    }
+    const all = Array.from(msgArea.children);
+    const idx = all.indexOf(editingMsgElement);
+    if (idx !== -1) {
+      for (let i = all.length - 1; i >= idx; i--) all[i].remove();
+    }
+    clearEditingState();
+  }
+  addMsg(text, 'user');
+
+  msgInput.value = ''; msgInput.style.height = 'auto';
+  setLoading(true);
+  const thinkEl = addThinking();
+
+  try {
+    const res = await fetch(API_BASE + '/chat', {
+      method:'POST', headers:apiHeaders(),
+      body:JSON.stringify({ query:text, thread_id:currentThreadId }),
+    });
+    if (!res.ok) { const err = await res.json().catch(()=>({})); throw new Error(err.detail || 'HTTP ' + res.status); }
+    const data = await res.json();
+    thinkEl.remove(); renderResponse(data);
+    loadThreadList().then(() => highlightActiveThread(currentThreadId));
+  } catch(err) {
+    thinkEl.remove(); addError('Request failed: ' + err.message);
+    document.getElementById('status-label').textContent = 'Error';
+  } finally {
+    setLoading(false);
+    if (document.getElementById('status-label').textContent !== 'Error')
+      document.getElementById('status-label').textContent = 'Online';
+    msgArea.scrollTop = msgArea.scrollHeight;
+  }
+}
+
+/* ── RENDER RESPONSE ── */
+function renderResponse(data) {
+  const wrap = document.createElement('div'); wrap.className = 'msg bot';
+  const bbl  = document.createElement('div'); bbl.className  = 'bubble';
+
+  if (data.intent) {
+    const tag = document.createElement('div');
+    tag.className = 'intent-tag ' + (data.intent === 'SQL' ? 'SQL' : 'RAG');
+    tag.textContent = data.intent === 'SQL' ? '⚙ SQL Query' : '📚 Market Lookup';
+    bbl.appendChild(tag); bbl.appendChild(document.createElement('br'));
+  }
+
+  const resp = document.createElement('div'); resp.innerHTML = marked.parse(data.response || '(no response)');
+  bbl.appendChild(resp);
+
+  if (data.columns || data.rag_sources) {
+    const row = document.createElement('div'); row.className = 'stats-row';
+    if (data.rows?.length)        row.appendChild(mkTag('📋 ' + data.rows.length + ' rows'));
+    if (data.columns?.length)     row.appendChild(mkTag('≡ ' + data.columns.length + ' cols'));
+    const numCharts = (data.chart_jsons?.filter(Boolean).length) || (data.chart_json ? 1 : 0);
+    if (numCharts) row.appendChild(mkTag('📈 ' + numCharts + ' chart' + (numCharts > 1 ? 's' : '')));
+    if (data.rag_sources?.length) row.appendChild(mkTag('📚 ' + data.rag_sources.length + ' source(s)'));
+    bbl.appendChild(row);
+  }
+
+  if (data.rag_sources?.length) {
+    const det = document.createElement('details'); det.className = 'sources-reveal';
+    const chips = data.rag_sources.map(s => `<span class="source-tag">${esc(s.source || JSON.stringify(s))}</span>`).join('');
+    det.innerHTML = `<summary>📚 Sources (${data.rag_sources.length})</summary><div class="sources-body">${chips}</div>`;
+    bbl.appendChild(det);
+  }
+
+  wrap.appendChild(bbl); msgArea.appendChild(wrap);
+
+  if (data.columns?.length && data.rows?.length) {
+    const tableCard = renderTable(data.columns, data.rows, data.kpis);
+    // Automatically attempt to show a chart for every table
+    /* individual chart divs disabled — charts are now on-demand via table chart dropdown
+    const chartList = data.chart_jsons?.filter(Boolean) || (data.chart_json ? [data.chart_json] : []);
+    if (chartList.length) {
+      chartList.forEach(cj => renderChart(cj));
+    } else {
+      // If backend didn't provide one, we can still try to build one in the frontend
+      // (Optional: call a frontend-only auto-chart function)
+    }
+    */
+  }
+  msgArea.scrollTop = msgArea.scrollHeight;
+}
+
+/* ── Interactive dashboard state ── */
+function getFilteredRows(ctx) {
+  if (!ctx?.filters?.length) return ctx.allRows;
+  return ctx.allRows.filter(row =>
+    ctx.filters.every(f => {
+      const idx = ctx.columns.indexOf(f.col);
+      if (idx < 0) return true;
+      return String(row[idx] ?? '').trim() === String(f.value ?? '').trim();
+    })
+  );
+}
+
+function detectDefaultFilterColumn(columns, rows) {
+  const country = columns.find(c => /country|nation/i.test(c));
+  if (country) return country;
+  const cat = columns.find((col, i) => {
+    const vals = rows.map(r => r[i]).filter(v => v !== null && v !== undefined && v !== '');
+    const num = vals.filter(v => !isNaN(parseFloat(v)) && isFinite(v)).length;
+    return vals.length && num <= vals.length * 0.35;
+  });
+  return cat || columns[0];
+}
+
+function buildDashboardFilterBar(ctx, onChange) {
+  const bar = document.createElement('div');
+  bar.className = 'dashboard-filter-bar';
+  const lbl = document.createElement('span');
+  lbl.className = 'dfb-label';
+  lbl.textContent = 'Cross-filter';
+  bar.appendChild(lbl);
+
+  const dimOpts = ctx.columns.filter((col, i) => {
+    const vals = ctx.allRows.map(r => r[i]).filter(v => v !== null && v !== undefined && v !== '');
+    const num = vals.filter(v => !isNaN(parseFloat(v)) && isFinite(v)).length;
+    return vals.length && num <= vals.length * 0.65;
+  });
+  const dimSel = document.createElement('select');
+  dimSel.className = 'slicer-select';
+  (dimOpts.length ? dimOpts : ctx.columns).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c; o.textContent = c;
+    if (c === ctx.filterCol) o.selected = true;
+    dimSel.appendChild(o);
+  });
+  bar.appendChild(dimSel);
+
+  const valSel = document.createElement('select');
+  valSel.className = 'slicer-select';
+  const fillValues = () => {
+    const col = dimSel.value;
+    const idx = ctx.columns.indexOf(col);
+    const uniq = [...new Set(ctx.allRows.map(r => String(r[idx] ?? '').trim()).filter(Boolean))].sort();
+    valSel.innerHTML = '<option value="">All</option>';
+    uniq.forEach(v => {
+      const o = document.createElement('option');
+      o.value = v; o.textContent = v.length > 28 ? v.slice(0, 25) + '…' : v;
+      valSel.appendChild(o);
+    });
+  };
+  fillValues();
+  bar.appendChild(valSel);
+
+  const chips = document.createElement('div');
+  chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:.35rem;align-items:center;';
+  bar.appendChild(chips);
+
+  const renderChips = () => {
+    chips.innerHTML = '';
+    ctx.filters.forEach((f, i) => {
+      const chip = document.createElement('span');
+      chip.className = 'dashboard-filter-chip';
+      chip.innerHTML = `${esc(f.col)}: ${esc(String(f.value))} <button type="button" title="Remove">×</button>`;
+      chip.querySelector('button').onclick = () => {
+        ctx.filters.splice(i, 1);
+        onChange();
+        renderChips();
+      };
+      chips.appendChild(chip);
+    });
+  };
+  renderChips();
+
+  dimSel.addEventListener('change', () => { ctx.filterCol = dimSel.value; fillValues(); });
+  valSel.addEventListener('change', () => {
+    if (!valSel.value) return;
+    const exists = ctx.filters.some(f => f.col === dimSel.value && f.value === valSel.value);
+    if (!exists) ctx.filters.push({ col: dimSel.value, value: valSel.value });
+    valSel.value = '';
+    onChange();
+    renderChips();
+  });
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'dfb-clear';
+  clearBtn.textContent = 'Clear filters';
+  clearBtn.onclick = () => { ctx.filters = []; onChange(); renderChips(); valSel.value = ''; };
+  bar.appendChild(clearBtn);
+
+  bar._renderChips = renderChips;
+  return bar;
+}
+
+function attachPlotlyCrossFilter(plotDiv, filterColName, ctx, onFilter) {
+  if (!filterColName || !ctx) return;
+  plotDiv.on('plotly_click', ev => {
+    const pt = ev.points?.[0];
+    if (!pt) return;
+    const val = pt.text ?? pt.label ?? pt.x ?? pt.location;
+    if (val === undefined || val === null || val === '') return;
+    const v = String(val).trim();
+    const exists = ctx.filters.some(f => f.col === filterColName && String(f.value).trim() === v);
+    if (exists) {
+      ctx.filters = ctx.filters.filter(f => !(f.col === filterColName && String(f.value).trim() === v));
+    } else {
+      ctx.filters.push({ col: filterColName, value: v });
+    }
+    onFilter();
+    const bar = ctx.chartContainer?.querySelector('.dashboard-filter-bar');
+    if (bar?._renderChips) bar._renderChips();
+  });
+  plotDiv.style.cursor = 'pointer';
+}
+
+function _refreshTableDashboardImpl(card) {
+  const ctx = card._dashCtx;
+  if (!ctx) return;
+  const filtered = getFilteredRows(ctx);
+  const totalPages = Math.ceil(filtered.length / ctx.PER_PAGE) || 1;
+  if (ctx.page > totalPages) ctx.page = totalPages;
+  ctx.drawPage(ctx.page, filtered);
+  ctx.page = Math.max(1, Math.min(ctx.page, totalPages));
+
+  const titleSpan = card.querySelector('.tbl-title span:last-child');
+  if (titleSpan) {
+    titleSpan.textContent = `${filtered.length} records / ${ctx.columns.length} columns` +
+      (ctx.filters.length ? ` · ${ctx.filters.length} filter(s)` : '');
+  }
+
+  const oldKpi = card.querySelector('.kpi-strip');
+  if (oldKpi) oldKpi.remove();
+  const kpiStrip = renderKpiCards(ctx.columns, filtered, ctx.backendKpis);
+  if (kpiStrip) card.querySelector('.table-head-bar')?.appendChild(kpiStrip);
+
+  if (ctx.chartContainer?.style.display !== 'none') {
+    if (ctx.activeChartType === 'dashboard') {
+      renderInteractiveDashboard(ctx.columns, filtered, ctx.chartContainer, ctx);
+    } else if (ctx.activeChartType && ctx.lastChartSelections) {
+      const { xCol, yCol, yCol2 } = ctx.lastChartSelections;
+      const plotArea = ctx.chartContainer.querySelector('.chart-plot-area');
+      if (plotArea) renderDynamicCharts(ctx.columns, filtered, plotArea, ctx.activeChartType, xCol, yCol, yCol2, ctx);
+    }
+  }
+}
+
+/* ── TABLE ── */
+function renderTable(columns, rows, backendKpis = null) {
+  const PER_PAGE = 10;
+  let page = 1;
+
+  const card = document.createElement('div'); card.className = 'msg bot table-card';
+
+  const headBar = document.createElement('div'); headBar.className = 'table-head-bar';
+  const titleDiv = document.createElement('div'); titleDiv.className = 'tbl-title';
+  titleDiv.innerHTML = `<span class="tbl-icon">TABLE:</span><span>${rows.length} records &nbsp;/&nbsp; ${columns.length} columns</span>`;
+  
+  const actions = document.createElement('div'); actions.className = 'table-actions';
+
+  // ── Chart dropdown wrapper ──
+  const chartDropdown = document.createElement('div'); chartDropdown.className = 'chart-type-dropdown';
+
+  const chartBtn = document.createElement('button'); chartBtn.type = 'button'; chartBtn.className = 'table-download-btn'; chartBtn.title = 'Visualise table';
+  chartBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6M6 20V10M18 20V4"/></svg>`;
+
+  const chartMenu = document.createElement('div'); chartMenu.className = 'chart-type-menu';
+  
+  const menuHeader = document.createElement('div'); menuHeader.className = 'chart-type-menu-header'; menuHeader.textContent = 'Visualise as';
+  chartMenu.appendChild(menuHeader);
+  const menuDivider = document.createElement('div'); menuDivider.className = 'chart-type-menu-divider';
+  chartMenu.appendChild(menuDivider);
+
+  chartDropdown.appendChild(chartBtn); chartDropdown.appendChild(chartMenu);
+
+  const chartContainer = document.createElement('div');
+  chartContainer.className = 'table-chart-container';
+  chartContainer.style.display = 'none';
+  chartContainer.style.padding = '12px 10px 8px';
+
+  // Analyse columns to determine which chart types are available
+  const { availableCharts, xIdx: detectedXIdx } = detectAvailableCharts(columns, rows);
+  let activeChartType = null;
+
+  // Build menu items
+  availableCharts.forEach(opt => {
+    const item = document.createElement('button'); item.type = 'button'; item.className = 'chart-type-menu-item';
+    item.dataset.chartType = opt.type;
+    item.innerHTML = `<span class="cmi-icon">${opt.icon}</span><span class="cmi-label">${opt.label}</span>`;
+    item.addEventListener('click', () => {
+      const wasSameType = activeChartType === opt.type && chartContainer.style.display !== 'none';
+      chartMenu.classList.remove('open');
+      if (wasSameType) {
+        chartContainer.style.display = 'none';
+        activeChartType = null;
+        minimizeChartBtn.style.display = 'none';
+        chartMenu.querySelectorAll('.chart-type-menu-item').forEach(el => el.classList.remove('active'));
+        return;
+      }
+      activeChartType = opt.type;
+      chartContainer.style.display = 'block';
+
+      // ── Clear container, build slicer + dedicated plot area ──
+      chartContainer.querySelectorAll('div[id^="dyn_plt_"]').forEach(d => { try { Plotly.purge(d); } catch(e){} });
+      chartContainer.innerHTML = '';
+
+      chartContainer.classList.toggle('dashboard-mode', opt.type === 'dashboard');
+      const filtered = card._dashCtx ? getFilteredRows(card._dashCtx) : rows;
+      if (opt.type === 'dashboard') {
+        renderInteractiveDashboard(columns, filtered, chartContainer, card._dashCtx);
+      } else {
+        const { panel: slicerEl, getSelections, selects } = buildSlicerPanel(columns, rows, opt.type);
+        chartContainer.appendChild(slicerEl);
+
+        const plotArea = document.createElement('div'); plotArea.className = 'chart-plot-area';
+        chartContainer.appendChild(plotArea);
+
+        const doRender = () => {
+          const { xCol, yCol, yCol2 } = getSelections();
+          if (card._dashCtx) {
+            card._dashCtx.lastChartSelections = { xCol, yCol, yCol2 };
+            card._dashCtx.activeChartType = opt.type;
+          }
+          const data = card._dashCtx ? getFilteredRows(card._dashCtx) : rows;
+          renderDynamicCharts(columns, data, plotArea, opt.type, xCol, yCol, yCol2, card._dashCtx);
+        };
+        selects.forEach(sel => sel.addEventListener('change', doRender));
+        doRender();
+      }
+      if (card._dashCtx) card._dashCtx.activeChartType = opt.type;
+      // ─────────────────────────────────────────────────────────
+
+      // Show minimize button in header
+      minimizeChartBtn.style.display = 'flex';
+      minimizeChartBtn.title = `Minimize ${opt.label}`;
+
+      // Mark active
+      chartMenu.querySelectorAll('.chart-type-menu-item').forEach(el => {
+        el.classList.toggle('active', el.dataset.chartType === opt.type);
+        const chk = el.querySelector('.cmi-check'); if (chk) chk.remove();
+        if (el.dataset.chartType === opt.type) {
+          const chk2 = document.createElement('span'); chk2.className = 'cmi-check'; chk2.textContent = '✓';
+          el.appendChild(chk2);
+        }
+      });
+      // Scroll chart into view without jumping to bottom
+      chartContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+    chartMenu.appendChild(item);
+  });
+
+  if (!availableCharts.length) {
+    const noOpt = document.createElement('div');
+    noOpt.style.cssText = 'padding:.45rem .9rem;font-size:.75rem;color:var(--ink4);font-family:var(--font-m);';
+    noOpt.textContent = 'No numeric data to chart';
+    chartMenu.appendChild(noOpt);
+  }
+
+  // Toggle menu open/close
+  chartBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    chartMenu.classList.toggle('open');
+  });
+  // Close on outside click
+  document.addEventListener('click', function closeOnOut(ev) {
+    if (!chartDropdown.contains(ev.target)) chartMenu.classList.remove('open');
+  });
+
+  // ── Download dropdown wrapper ──
+  const downloadDropdown = document.createElement('div'); 
+  downloadDropdown.className = 'download-dropdown';
+
+  const downloadBtn = document.createElement('button'); 
+  downloadBtn.type = 'button'; 
+  downloadBtn.className = 'table-download-btn'; 
+  downloadBtn.title = 'Download options';
+  downloadBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+
+  const downloadMenu = document.createElement('div'); 
+  downloadMenu.className = 'download-menu';
+
+  const dlMenuHeader = document.createElement('div'); 
+  dlMenuHeader.className = 'download-menu-header'; 
+  dlMenuHeader.textContent = 'Download as';
+  downloadMenu.appendChild(dlMenuHeader);
+
+  const dlMenuDivider = document.createElement('div'); 
+  dlMenuDivider.className = 'download-menu-divider';
+  downloadMenu.appendChild(dlMenuDivider);
+
+  const mkDlItem = (icon, label, onClick) => {
+    const item = document.createElement('button'); 
+    item.type = 'button'; 
+    item.className = 'download-menu-item';
+    item.innerHTML = `<span class="dmi-icon">${icon}</span><span class="dmi-label">${label}</span>`;
+    item.onclick = (e) => { 
+      e.stopPropagation(); 
+      downloadMenu.classList.remove('open'); 
+      onClick(); 
+    };
+    downloadMenu.appendChild(item);
+    return item;
+  };
+
+  const currentTitle = document.querySelector('.history-item.active .history-title')?.textContent || 'table';
+
+  mkDlItem('', 'Download Table (Excel)', () => downloadTableAsExcel(columns, rows, currentTitle));
+  mkDlItem('', 'Download Table (CSV)', () => downloadTableAsCsv(columns, rows, currentTitle));
+  mkDlItem('', 'Download Charts (PNG)', () => downloadTableCharts(chartContainer, currentTitle));
+  mkDlItem('', 'Download Dashboard (PDF)', () => downloadDashboard(card, currentTitle));
+
+  downloadDropdown.appendChild(downloadBtn); 
+  downloadDropdown.appendChild(downloadMenu);
+
+  downloadBtn.onclick = (e) => {
+    e.stopPropagation();
+    downloadMenu.classList.toggle('open');
+    chartMenu.classList.remove('open'); // Close chart menu if open
+  };
+
+  document.addEventListener('click', () => downloadMenu.classList.remove('open'));
+
+  // Minimize chart button — hidden until a chart is open
+  const minimizeChartBtn = document.createElement('button'); minimizeChartBtn.type = 'button';
+  minimizeChartBtn.className = 'table-download-btn'; minimizeChartBtn.title = 'Minimize chart';
+  minimizeChartBtn.style.display = 'none';
+  minimizeChartBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+  minimizeChartBtn.addEventListener('click', () => {
+    chartContainer.style.display = 'none';
+    activeChartType = null;
+    minimizeChartBtn.style.display = 'none';
+    chartMenu.querySelectorAll('.chart-type-menu-item').forEach(el => {
+      el.classList.remove('active');
+      const chk = el.querySelector('.cmi-check'); if (chk) chk.remove();
+    });
+  });
+
+  actions.appendChild(chartDropdown); actions.appendChild(minimizeChartBtn); actions.appendChild(downloadDropdown);
+  headBar.appendChild(titleDiv); headBar.appendChild(actions);
+
+  const scrollX = document.createElement('div'); scrollX.className = 'table-scroll-x';
+  const tbl = document.createElement('table');
+  const thead = tbl.createTHead(); const hrow = thead.insertRow();
+  columns.forEach(c => { const th = document.createElement('th'); th.textContent = c; hrow.appendChild(th); });
+  const tbody = tbl.createTBody();
+  const footBar = document.createElement('div'); footBar.className = 'table-footer-bar';
+
+  const getPageRows = () => (card._dashCtx ? getFilteredRows(card._dashCtx) : rows);
+
+  function drawPage(p, dataRows = null) {
+    const data = dataRows ?? getPageRows();
+    const totalPages = Math.ceil(data.length / PER_PAGE) || 1;
+    page = Math.max(1, Math.min(p, totalPages || 1));
+    if (card._dashCtx) card._dashCtx.page = page;
+    tbody.innerHTML = '';
+    data.slice((page-1)*PER_PAGE, page*PER_PAGE).forEach(row => {
+      const tr = tbody.insertRow();
+      row.forEach(cell => { const td = tr.insertCell(); td.textContent = cell ?? ''; });
+    });
+    
+    // Only build footer structure once
+    if (!footBar.innerHTML) {
+      footBar.innerHTML = `
+        <span class="pg-info">Page ${page} of ${totalPages||1}</span>
+        <div class="pg-btns" style="display:flex; align-items:center; gap:0.5rem;">
+          <button class="pg-btn prev-btn">← Prev</button>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <input type="number" class="pg-input" value="${page}" min="1" max="${totalPages||1}">
+          </div>
+          <button class="pg-btn next-btn">Next →</button>
+        </div>`;
+      
+      const pgInput = footBar.querySelector('.pg-input');
+      const prevBtn = footBar.querySelector('.prev-btn');
+      const nextBtn = footBar.querySelector('.next-btn');
+      
+      pgInput.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value);
+        if (!isNaN(val)) drawPage(val, getPageRows());
+      });
+      pgInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          let val = parseInt(e.target.value);
+          if (!isNaN(val)) drawPage(val, getPageRows());
+          e.target.blur();
+        }
+      });
+      prevBtn.addEventListener('click', () => drawPage(page - 1, getPageRows()));
+      nextBtn.addEventListener('click', () => drawPage(page + 1, getPageRows()));
+    }
+
+    // Update values without recreating elements to preserve focus
+    const info = footBar.querySelector('.pg-info');
+    const input = footBar.querySelector('.pg-input');
+    const prev = footBar.querySelector('.prev-btn');
+    const next = footBar.querySelector('.next-btn');
+    
+    if (info) info.textContent = `Page ${page} of ${totalPages||1}`;
+    if (input && document.activeElement !== input) input.value = page;
+    if (prev) prev.disabled = (page === 1);
+    if (next) next.disabled = (page >= totalPages || totalPages === 0);
+  }
+
+  scrollX.appendChild(tbl); 
+  
+  card._dashCtx = {
+    columns,
+    allRows: rows,
+    backendKpis,
+    filters: [],
+    filterCol: detectDefaultFilterColumn(columns, rows),
+    chartContainer,
+    activeChartType: null,
+    lastChartSelections: null,
+    PER_PAGE,
+    page: 1,
+    drawPage,
+    onRefresh: () => {
+      clearTimeout(card._dashRefreshTimer);
+      card._dashRefreshTimer = setTimeout(() => _refreshTableDashboardImpl(card), 150);
+    },
+  };
+  card._dashCtx.page = page;
+
+  // KPIs - now integrated into the header bar
+  const kpiStrip = renderKpiCards(columns, rows, backendKpis);
+  if (kpiStrip) headBar.appendChild(kpiStrip);
+
+  card.appendChild(headBar); 
+  card.appendChild(chartContainer);
+  card.appendChild(scrollX); card.appendChild(footBar);
+  msgArea.appendChild(card); drawPage(1); 
+
+  // Auto-open interactive dashboard
+  setTimeout(() => {
+    const dashBtn = chartMenu.querySelector('[data-chart-type="dashboard"]');
+    if (dashBtn) dashBtn.click();
+  }, 80);
+
+  msgArea.scrollTop = msgArea.scrollHeight;
+  return card;
+}
+
+/**
+ * Detect which chart types are meaningful for a given column/row set.
+ */
+function detectAvailableCharts(columns, rows) {
+  if (!rows.length) return { availableCharts: [], xIdx: 0 };
+
+  const numericIdxs = [], dateIdxs = [], catIdxs = [];
+  columns.forEach((col, i) => {
+    const vals = rows.map(r => r[i]).filter(v => v !== null && v !== undefined && v !== '');
+    const numCount = vals.filter(v => typeof v === 'number' || (!isNaN(parseFloat(v)) && isFinite(v) && String(parseFloat(v)).length > 0)).length;
+    if (vals.length > 0 && numCount > vals.length * 0.65) numericIdxs.push(i);
+    else if (/date|year|month|time|day/i.test(col)) dateIdxs.push(i);
+    else catIdxs.push(i);
+  });
+
+  const xIdx = dateIdxs[0] ?? catIdxs[0] ?? 0;
+  const uniqueX = new Set(rows.map(r => String(r[xIdx] ?? ''))).size;
+  const availableCharts = [];
+
+  // Bar — always available
+  availableCharts.push({ type: 'dashboard', label: 'Auto Dashboard', icon: '' });
+  availableCharts.push({ type: 'bar', label: 'Bar Chart', icon: '' });
+
+  // Line — numeric Y + ordered axis (date or many categories)
+  if (numericIdxs.length && (dateIdxs.length || uniqueX > 2)) {
+    availableCharts.push({ type: 'line', label: 'Line Chart', icon: '' });
+  }
+
+  // Pie — 1+ numeric, reasonable number of slices
+  if (numericIdxs.length >= 1 && uniqueX >= 2 && uniqueX <= 20) {
+    availableCharts.push({ type: 'pie', label: 'Pie Chart', icon: '' });
+  }
+
+  // Scatter — 2+ numeric columns
+  if (numericIdxs.length >= 2) {
+    availableCharts.push({ type: 'scatter', label: 'Scatter Plot', icon: '' });
+  }
+  return { availableCharts, xIdx, numericIdxs, dateIdxs, catIdxs };
+}
+
+/**
+ * Build slicer dropdowns appropriate for the chart type.
+ * Returns { panel, getSelections(), selects[] }
+ */
+function buildSlicerPanel(columns, rows, type) {
+  const numericCols = [], dateCols = [], catCols = [];
+  columns.forEach((col, i) => {
+    const vals = rows.map(r => r[i]).filter(v => v !== null && v !== undefined && v !== '');
+    const numCount = vals.filter(v => !isNaN(parseFloat(v)) && isFinite(v)).length;
+    if (vals.length && numCount > vals.length * 0.65) numericCols.push(col);
+    else if (/date|year|month|time|day/i.test(col)) dateCols.push(col);
+    else catCols.push(col);
+  });
+
+  const panel = document.createElement('div'); panel.className = 'slicer-panel';
+
+  function mkSel(label, opts, defaultVal) {
+    const grp = document.createElement('div'); grp.className = 'slicer-group';
+    const lbl = document.createElement('span'); lbl.className = 'slicer-label'; lbl.textContent = label;
+    const sel = document.createElement('select'); sel.className = 'slicer-select';
+    opts.forEach(o => {
+      const opt = document.createElement('option'); opt.value = o; opt.textContent = o;
+      if (o === defaultVal) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    grp.appendChild(lbl); grp.appendChild(sel); panel.appendChild(grp);
+    return sel;
+  }
+
+  const defX   = dateCols[0] || catCols[0] || columns[0];
+  const defY   = numericCols[0] || columns[columns.length - 1];
+  const defY2  = numericCols[1] || null;
+  const allCat = [...dateCols, ...catCols];
+  const allCols = [...dateCols, ...catCols, ...numericCols];
+
+  let xSel, ySel, y2Sel;
+
+  if (type === 'pie') {
+    xSel = mkSel('Label',  allCols.length ? allCols  : columns, defX);
+    ySel = mkSel('Value',  numericCols.length ? numericCols : columns, defY);
+    return { panel, getSelections: () => ({ xCol: xSel.value, yCol: ySel.value, yCol2: null }), selects: [xSel, ySel] };
+
+  } else if (type === 'scatter') {
+    xSel = mkSel('X Axis', numericCols.length ? numericCols : columns, numericCols[0] || columns[0]);
+    ySel = mkSel('Y Axis', numericCols.length ? numericCols : columns, numericCols[1] || numericCols[0] || columns[0]);
+    return { panel, getSelections: () => ({ xCol: xSel.value, yCol: ySel.value, yCol2: null }), selects: [xSel, ySel] };
+
+  } else { // bar, line
+    xSel = mkSel('X Axis', allCols.length ? allCols : columns, defX);
+    ySel = mkSel('Y Axis', numericCols.length ? numericCols : columns, defY);
+    const y2Opts = ['(none)', ...(numericCols.length ? numericCols : columns)];
+    if (numericCols.length >= 2) {
+      y2Sel = mkSel('Y2', y2Opts, defY2 || '(none)');
+    }
+    return {
+      panel,
+      getSelections: () => ({
+        xCol: xSel.value,
+        yCol: ySel.value,
+        yCol2: y2Sel && y2Sel.value !== '(none)' ? y2Sel.value : null,
+      }),
+      selects: [xSel, ySel, y2Sel].filter(Boolean),
+    };
+  }
+}
+
+/**
+ * Render KPI cards for cost/value columns grouped by dimension columns.
+ * Returns a .kpi-strip element, or null if no relevant data found.
+ */
+function renderKpiCards(columns, rows, backendKpis = null) {
+  const strip = document.createElement('div'); strip.className = 'kpi-strip';
+  const gaugeCandidates = [];
+  const parseNumeric = (raw) => {
+    if (typeof raw === 'number' && isFinite(raw)) return raw;
+    if (raw === null || raw === undefined) return NaN;
+    const cleaned = String(raw).replace(/,/g, '').match(/-?\d+(\.\d+)?/);
+    return cleaned ? parseFloat(cleaned[0]) : NaN;
+  };
+  const renderGauge = (valueNum, maxNum) => {
+    if (!isFinite(valueNum) || !isFinite(maxNum) || maxNum <= 0) return '';
+    const progress = Math.max(0, Math.min(100, Math.round((Math.abs(valueNum) / maxNum) * 100)));
+    return `<span class="kpi-gauge" style="--gauge:${progress}%;" title="${progress}%"></span>`;
+  };
+  
+  const mkCard = (label, value, sub, valueNum = NaN) => {
+    const c = document.createElement('div'); c.className = 'kpi-card';
+    c.dataset.valueNum = isFinite(valueNum) ? String(Math.abs(valueNum)) : '';
+    c.innerHTML = `<span class="kpi-gauge" style="--gauge:0%;display:none;"></span><div class="kpi-main"><div class="kpi-card-label">${label}</div><div class="kpi-card-value">${value}</div>${sub ? `<div class="kpi-card-sub">${sub}</div>` : ''}</div>`;
+    strip.appendChild(c);
+    if (isFinite(valueNum)) gaugeCandidates.push(Math.abs(valueNum));
+  };
+
+  // If backend provided KPIs, use them
+  if (backendKpis && backendKpis.length > 0) {
+    backendKpis.forEach(k => mkCard(k.label, k.value, k.sub, parseNumeric(k.value)));
+    const maxGauge = Math.max(...gaugeCandidates, 0);
+    strip.querySelectorAll('.kpi-card').forEach(card => {
+      const gauge = card.querySelector('.kpi-gauge');
+      const valueNum = parseFloat(card.dataset.valueNum || '');
+      const markup = renderGauge(valueNum, maxGauge);
+      if (gauge && markup) {
+        const tmp = document.createElement('div');
+        tmp.innerHTML = markup;
+        gauge.replaceWith(tmp.firstChild);
+      }
+    });
+    return strip;
+  }
+
+  const VALUE_KW = /cost|amount|value|price|budget|qty|quantity|total|revenue|spend/i;
+  const DIM_KW   = /service|country|vendor|category|stage|type|mode/i;
+
+  const valueCols = [], dimCols = [];
+  columns.forEach((col, i) => {
+    const vals = rows.map(r => r[i]).filter(v => v !== null && v !== undefined && v !== '');
+    const numCount = vals.filter(v => !isNaN(parseFloat(v)) && isFinite(v)).length;
+    if (vals.length && numCount > vals.length * 0.65) {
+        if (VALUE_KW.test(col)) valueCols.push(i);
+        else valueCols.push(i); // Include all numeric as fallback
+    }
+    else if (DIM_KW.test(col)) dimCols.push(i);
+  });
+
+  const fmt = n => {
+    if (Math.abs(n) >= 1e7) return (n / 1e7).toFixed(1) + ' Cr';
+    if (Math.abs(n) >= 1e5) return (n / 1e5).toFixed(1) + ' L';
+    if (Math.abs(n) >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toFixed(1);
+  };
+
+  // Always add total records as a KPI
+  mkCard('Total Records', rows.length, 'Count', rows.length);
+
+  if (valueCols.length) {
+    valueCols.slice(0, 2).forEach(vIdx => {
+      const colName = columns[vIdx];
+      const total = rows.reduce((s, r) => s + (parseFloat(r[vIdx]) || 0), 0);
+      mkCard(`Total ${colName}`, fmt(total), `Sum`, total);
+
+      if (dimCols.length) {
+        dimCols.slice(0, 1).forEach(dIdx => {
+          const agg = {};
+          rows.forEach(r => {
+            const k = String(r[dIdx] ?? 'Unknown').trim() || 'Unknown';
+            agg[k] = (agg[k] || 0) + (parseFloat(r[vIdx]) || 0);
+          });
+          const entries = Object.entries(agg).filter(([k]) => k && k !== 'Unknown').sort((a, b) => b[1] - a[1]);
+          if (entries.length) {
+            const [topKey, topVal] = entries[0];
+            mkCard(`Top ${columns[dIdx]}`, topKey.length > 20 ? topKey.substring(0,17)+'...' : topKey, `${colName}: ${fmt(topVal)}`, topVal);
+          }
+        });
+      }
+    });
+  } else if (dimCols.length) {
+    // If no values, show top categories by count
+    dimCols.slice(0, 2).forEach(dIdx => {
+      const counts = {};
+      rows.forEach(r => { const k = String(r[dIdx] ?? 'Unknown'); counts[k] = (counts[k] || 0) + 1; });
+      const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+      if (top) mkCard(`Top ${columns[dIdx]}`, top[0], `${top[1]} records`, top[1]);
+    });
+  }
+
+  const maxGauge = Math.max(...gaugeCandidates, 0);
+  strip.querySelectorAll('.kpi-card').forEach(card => {
+    const gauge = card.querySelector('.kpi-gauge');
+    const valueNum = parseFloat(card.dataset.valueNum || '');
+    const markup = renderGauge(valueNum, maxGauge);
+    if (gauge && markup) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = markup;
+      gauge.replaceWith(tmp.firstChild);
+    }
+  });
+
+  return strip.children.length ? strip : null;
+}
+
+/**
+ * Render a chart into plotArea using explicit column name overrides.
+ */
+function renderDynamicCharts(columns, rows, plotArea, type = 'bar', xColOverride = null, yColOverride = null, yCol2Override = null, dashCtx = null) {
+  plotArea.querySelectorAll('div[id^="dyn_plt_"]').forEach(d => { try { Plotly.purge(d); } catch(e){} });
+  plotArea.innerHTML = '';
+  if (!rows.length) return;
+
+  const numericIdxs = [], dateIdxs = [], catIdxs = [];
+  columns.forEach((col, i) => {
+    const vals = rows.map(r => r[i]).filter(v => v !== null && v !== undefined && v !== '');
+    const numCount = vals.filter(v => typeof v === 'number' || (!isNaN(parseFloat(v)) && isFinite(v))).length;
+    if (vals.length > 0 && numCount > vals.length * 0.65) numericIdxs.push(i);
+    else if (/date|year|month|time|day/i.test(col)) dateIdxs.push(i);
+    else catIdxs.push(i);
+  });
+
+  // Resolve column indices — honour slicer overrides if provided
+  const xIdx  = xColOverride  ? columns.indexOf(xColOverride)  : (dateIdxs[0] ?? catIdxs[0] ?? 0);
+  const yIdx0 = yColOverride  ? columns.indexOf(yColOverride)  : (numericIdxs[0] ?? -1);
+  const yIdx1 = yCol2Override ? columns.indexOf(yCol2Override) : (numericIdxs[1] ?? -1);
+  const yIdxs = [yIdx0, yIdx1].filter(i => i >= 0 && i !== xIdx);
+  if (!yIdxs.length && numericIdxs.length) yIdxs.push(...numericIdxs.slice(0, 2));
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  const COLORS = ['#1c2b4a','#3d80d4','#b5892a','#2d6a4f','#8b1a1a','#5a4a8a','#c07020'];
+
+  const baseLayout = {
+    height: 300,
+    margin: { t: 20, b: 52, l: 52, r: 20 },
+    paper_bgcolor: 'transparent',
+    plot_bgcolor:  isDark ? 'rgba(34,32,29,.5)' : 'rgba(248,247,244,.5)',
+    font: { color: isDark ? '#c4bdb0' : '#3a3730', family: 'DM Sans, sans-serif', size: 11 },
+    legend: { bgcolor: 'transparent', font: { color: isDark ? '#c4bdb0' : '#3a3730' } },
+    xaxis: { gridcolor: isDark ? '#2c2a26' : '#e4e0d8', color: isDark ? '#877f75' : '#78726a', tickfont: { size: 10 }, automargin: true },
+    yaxis: { gridcolor: isDark ? '#2c2a26' : '#e4e0d8', color: isDark ? '#877f75' : '#78726a', tickfont: { size: 10 }, rangemode: 'tozero' },
+  };
+
+  let traces = [];
+
+  if (type === 'pie') {
+    const valIdx   = yIdxs[0] ?? xIdx;
+    const labelIdx = xIdx !== valIdx ? xIdx : (catIdxs[0] ?? 0);
+    const aggregated = {};
+    rows.forEach(r => {
+      const k = String(r[labelIdx] ?? 'Unknown');
+      aggregated[k] = (aggregated[k] || 0) + (parseFloat(r[valIdx]) || 0);
+    });
+    // Sort by value desc, cap at 15 slices
+    const sorted = Object.entries(aggregated).sort((a,b) => b[1]-a[1]).slice(0,15);
+    traces = [{ type: 'pie', labels: sorted.map(e=>e[0]), values: sorted.map(e=>e[1]),
+      textinfo: 'label+percent', textposition: 'inside',
+      hole: 0.38, marker: { colors: COLORS.concat(['#1a5276','#d4380d','#0958d9','#2d6a4f','#6c3483']) },
+      outsidetextfont: { color: isDark ? '#c4bdb0' : '#3a3730' } }];
+    baseLayout.margin = { t: 10, b: 10, l: 10, r: 10 };
+    delete baseLayout.xaxis; delete baseLayout.yaxis;
+
+  } else if (type === 'scatter') {
+    const sxIdx = yIdxs[0] ?? xIdx;
+    const syIdx = yIdxs[1] ?? yIdxs[0] ?? xIdx;
+    traces = [{ type: 'scatter', mode: 'markers',
+      x: rows.map(r => parseFloat(r[sxIdx]) || 0),
+      y: rows.map(r => parseFloat(r[syIdx]) || 0),
+      text: rows.map(r => String(r[xIdx] ?? '')),
+      hovertemplate: `<b>%{text}</b><br>${columns[sxIdx]}: %{x}<br>${columns[syIdx]}: %{y}<extra></extra>`,
+      marker: { color: COLORS[0], size: 7, opacity: 0.75, line: { color: isDark ? '#c4bdb0' : '#fff', width: 1 } } }];
+    baseLayout.xaxis.title = { text: columns[sxIdx], font: { size: 10 } };
+    baseLayout.yaxis.title = { text: columns[syIdx], font: { size: 10 } };
+
+  } else if (type === 'line') {
+    if (!yIdxs.length) {
+      const counts = {};
+      rows.forEach(r => { const v = String(r[xIdx] ?? 'Unknown'); counts[v] = (counts[v] || 0) + 1; });
+      traces = [{ type: 'scatter', mode: 'lines+markers', x: Object.keys(counts), y: Object.values(counts),
+        line: { color: COLORS[0], width: 2 }, marker: { size: 5 }, name: `Count by ${columns[xIdx]}` }];
+    } else {
+      traces = yIdxs.map((yIdx, i) => ({
+        type: 'scatter', mode: 'lines+markers',
+        x: rows.map(r => r[xIdx]), y: rows.map(r => parseFloat(r[yIdx]) || 0),
+        name: columns[yIdx], line: { color: COLORS[i % COLORS.length], width: 2 }, marker: { size: 5 },
+      }));
+    }
+
+  } else { // bar
+    if (!yIdxs.length) {
+      const counts = {};
+      rows.forEach(r => { const v = String(r[xIdx] ?? 'Unknown'); counts[v] = (counts[v] || 0) + 1; });
+      traces = [{ type: 'bar', x: Object.keys(counts), y: Object.values(counts),
+        marker: { color: COLORS[0] }, name: `Count by ${columns[xIdx]}` }];
+    } else {
+      // Aggregate by x when there are repeated x values
+      if (yIdxs.length === 1) {
+        const agg = {};
+        rows.forEach(r => {
+          const k = String(r[xIdx] ?? '');
+          agg[k] = (agg[k] || 0) + (parseFloat(r[yIdxs[0]]) || 0);
+        });
+        traces = [{ type: 'bar', x: Object.keys(agg), y: Object.values(agg),
+          name: columns[yIdxs[0]], marker: { color: COLORS[0] } }];
+      } else {
+        traces = yIdxs.map((yIdx, i) => ({
+          type: 'bar', x: rows.map(r => r[xIdx]), y: rows.map(r => parseFloat(r[yIdx]) || 0),
+          name: columns[yIdx], marker: { color: COLORS[i % COLORS.length] },
+        }));
+        baseLayout.barmode = 'group';
+      }
+    }
+  }
+
+  if (!traces.length) return;
+
+  const panel = plotArea.closest('.dashboard-panel');
+  const chartH = panel ? 260 : 300;
+  baseLayout.height = chartH;
+
+  const div = document.createElement('div');
+  div.id = 'dyn_plt_' + Math.random().toString(36).substr(2, 9);
+  div.style.cssText = `height:${chartH}px;width:100%;`;
+  plotArea.appendChild(div);
+
+  const filterCol = xColOverride || dashCtx?.filterCol || columns[0];
+  const onFilter = dashCtx?.onRefresh || (() => {});
+
+  Plotly.newPlot(div, traces, baseLayout, {
+    responsive: true, displayModeBar: true,
+    modeBarButtonsToRemove: ['lasso2d','select2d','autoScale2d'],
+    displaylogo: false,
+    toImageButtonOptions: { filename: 'MarketLen_chart', scale: 2, format: 'png' },
+  }).then(() => {
+    if (dashCtx && type !== 'scatter') attachPlotlyCrossFilter(div, filterCol, dashCtx, onFilter);
+  });
+}
+
+function renderInteractiveDashboard(columns, rows, container, dashCtx) {
+  container.innerHTML = '';
+  container.classList.add('dashboard-mode');
+
+  if (dashCtx) {
+    const filterBar = buildDashboardFilterBar(dashCtx, dashCtx.onRefresh || (() => {}));
+    container.appendChild(filterBar);
+  }
+
+  const grid = document.createElement('div');
+  grid.className = 'dashboard-grid';
+  const chartChoices = detectAvailableCharts(columns, rows).availableCharts
+    .map(c => c.type)
+    .filter(t => t !== 'dashboard');
+  const preferred = ['bar', 'line', 'pie', 'scatter'];
+  const numericCols = columns.filter((col, i) => rows.filter(r => r[i] !== null && r[i] !== undefined && r[i] !== '').filter(v => !isNaN(parseFloat(v)) && isFinite(v)).length > rows.length * 0.65);
+  const firstNumeric = numericCols[0] || '(count)';
+  const catCol = dashCtx?.filterCol || detectDefaultFilterColumn(columns, rows);
+
+  const labels = { bar: 'Bar', line: 'Line', pie: 'Pie', scatter: 'Scatter' };
+
+  preferred.forEach(type => {
+    if (!chartChoices.includes(type)) return;
+    const panel = document.createElement('div');
+    panel.className = 'dashboard-panel';
+    panel.innerHTML = `<div class="dashboard-panel-title">${labels[type] || type} · click to filter</div>`;
+    const plotWrap = document.createElement('div');
+    plotWrap.className = 'plot-wrap chart-plot-area';
+    panel.appendChild(plotWrap);
+    if (type === 'pie') {
+      renderDynamicCharts(columns, rows, plotWrap, type, catCol, firstNumeric, null, dashCtx);
+    } else {
+      renderDynamicCharts(columns, rows, plotWrap, type, catCol, numericCols[0] || null, numericCols[1] || null, dashCtx);
+    }
+    grid.appendChild(panel);
+  });
+  container.appendChild(grid);
+}
+
+/* ── CHART ── */
+function renderChart(src) {
+  let fig;
+  try { fig = typeof src === 'string' ? JSON.parse(src) : src; }
+  catch(e) { addError('Could not parse chart data'); return; }
+
+  const data   = fig.data   || fig;
+  const layout = fig.layout || {};
+  if (!data || (Array.isArray(data) && !data.length)) return;
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+  const card = document.createElement('div'); card.className = 'msg bot chart-card';
+
+  // Detect chart type
+  const dataArray = Array.isArray(data) ? data : [data];
+  const chartType = dataArray[0]?.type || 'chart';
+  const orientation = dataArray[0]?.orientation || 'v';
+  const chartTypeLabel = { 
+    bar: orientation === 'h' ? 'Horizontal Bar' : 'Bar Chart', 
+    line: 'Line Chart', 
+    pie: 'Pie Chart', 
+    scatter: 'Scatter Plot' 
+  }[chartType] || 'Chart';
+  const chartTitle = layout?.title?.text || chartTypeLabel;
+
+  const topbar = document.createElement('div'); topbar.className = 'chart-topbar';
+  topbar.innerHTML = `<span class="chart-icon">📈</span><span class="chart-label">${esc(chartTitle)}</span><span class="chart-type-badge">${esc(chartTypeLabel)}</span>`;
+
+  const body    = document.createElement('div'); body.className = 'chart-body';
+  const plotDiv = document.createElement('div');
+  const pid     = 'plt_' + (chartIdx++);
+  plotDiv.id    = pid;
+  plotDiv.style.cssText = 'height:340px;width:100%';
+
+  body.appendChild(plotDiv); card.appendChild(topbar); card.appendChild(body);
+  msgArea.appendChild(card);
+
+  const isPie = dataArray[0]?.type === 'pie';
+  const finalLayout = {
+    ...layout, title:null, autosize:true,
+    paper_bgcolor: isDark ? '#1a1917' : '#ffffff',
+    plot_bgcolor:  isDark ? '#22201d' : '#f8f7f4',
+    font:{ color:isDark?'#c4bdb0':'#18160f', family:'DM Sans, sans-serif', size:12 },
+    legend:{ ...layout?.legend, bgcolor:'transparent', font:{ color:isDark?'#c4bdb0':'#3a3730' } },
+    margin:{ t:20, l:50, r:20, b:45 },
+    colorway:['#1c2b4a','#b5892a','#8b1a1a','#2d6a4f','#5a4a8a','#c07020','#1a5276','#d4380d','#0958d9'],
+  };
+  if (!isPie) {
+    finalLayout.xaxis = { ...layout?.xaxis, gridcolor:isDark?'#2c2a26':'#e4e0d8', color:isDark?'#877f75':'#78726a', tickfont:{size:11}, autorange:true };
+    finalLayout.yaxis = { ...layout?.yaxis, gridcolor:isDark?'#2c2a26':'#e4e0d8', color:isDark?'#877f75':'#78726a', tickfont:{size:11}, autorange:true, rangemode:'tozero' };
+  }
+
+  Plotly.newPlot(pid, dataArray, finalLayout, {
+    responsive:true, displayModeBar:true,
+    modeBarButtonsToRemove:['lasso2d','select2d','autoScale2d'],
+    displaylogo:false,
+    toImageButtonOptions:{ filename:'MarketLen_chart', scale:2, format:'png' },
+  });
+}
+
+/**
+ * Download all active charts as PNG files
+ */
+async function downloadTableCharts(container, title) {
+  const plots = container.querySelectorAll('div[id^="dyn_plt_"]');
+  
+  if (!plots.length) {
+    alert('No active charts to download. Please generate a chart first using the Visualise button.');
+    return;
+  }
+  
+  const downloadBtn = container.closest('.table-card').querySelector('.table-download-btn');
+  const originalHtml = downloadBtn ? downloadBtn.innerHTML : '';
+  
+  if (downloadBtn) {
+    downloadBtn.disabled = true;
+    downloadBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  }
+  
+  try {
+    for (let i = 0; i < plots.length; i++) {
+      const dataUrl = await Plotly.toImage(plots[i], { 
+        format: 'png', 
+        width: 1200, 
+        height: 600, 
+        scale: 2 
+      });
+      
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = `${title.replace(/\s+/g, '_')}_chart_${i + 1}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      // Small delay between downloads
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+    
+    // Success feedback
+    if (downloadBtn) {
+      downloadBtn.style.color = '#22a85a';
+      setTimeout(() => { downloadBtn.style.color = ''; }, 2000);
+    }
+  } catch (error) {
+    console.error('Chart download failed:', error);
+    alert('Failed to download charts. Please try again.');
+  } finally {
+    if (downloadBtn) {
+      downloadBtn.disabled = false;
+      downloadBtn.innerHTML = originalHtml;
+    }
+  }
+}
+
+/**
+ * Download table + charts + KPIs as a beautiful PDF dashboard
+ */
+async function downloadDashboard(card, title) {
+  const kpiStrip = card.querySelector('.kpi-strip');
+  const chartContainer = card.querySelector('.table-chart-container');
+  const table = card.querySelector('table');
+  const tblTitle = card.querySelector('.tbl-title')?.textContent || 'Dashboard';
+  
+  const downloadBtn = card.querySelector('.table-download-btn');
+  const originalHtml = downloadBtn ? downloadBtn.innerHTML : '';
+  
+  if (downloadBtn) {
+    downloadBtn.disabled = true;
+    downloadBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>`;
+  }
+  
+  try {
+    const chartImageMap = new Map();
+    const plots = chartContainer.querySelectorAll('div[id^="dyn_plt_"]');
+    
+    for (const plot of plots) {
+      try {
+        const img = await Plotly.toImage(plot, { format:'png', width:1000, height:450, scale:2 });
+        chartImageMap.set(plot, img);
+      } catch (e) {}
+    }
+    
+    const html = [];
+    html.push('<!doctype html><html><head><meta charset="utf-8">');
+    html.push(`<title>Presentation - ${esc(title)}</title>`);
+    html.push('<style>');
+    html.push(`
+      @page { size: landscape; margin: 0; }
+      * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact; }
+      body { 
+        font-family: 'Segoe UI', system-ui, sans-serif; 
+        background: #f0f2f5; 
+        color: #1a1a1a;
+        width: 297mm; height: 210mm; /* A4 Landscape */
+        overflow: hidden;
+      }
+      .dashboard {
+        display: grid;
+        grid-template-rows: 60px 1fr 40px;
+        height: 100vh;
+        width: 100vw;
+        padding: 15px;
+        gap: 15px;
+      }
+      .header {
+        background: #1c2b4a;
+        color: #fff;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        padding: 0 25px;
+        justify-content: space-between;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      }
+      .header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+      .header-meta { font-size: 0.8rem; opacity: 0.7; font-family: monospace; }
+      
+      .main-content {
+        display: grid;
+        grid-template-columns: 280px 1fr;
+        gap: 15px;
+        overflow: hidden;
+      }
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .kpi-tile {
+        background: #fff;
+        border-radius: 10px;
+        padding: 15px;
+        border-left: 5px solid #3d80d4;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      }
+      .kpi-label { font-size: 0.65rem; text-transform: uppercase; color: #666; font-weight: 700; margin-bottom: 4px; }
+      .kpi-value { font-size: 1.3rem; font-weight: 800; color: #1c2b4a; }
+      .kpi-sub { font-size: 0.6rem; color: #999; margin-top: 2px; }
+
+      .viz-area {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 15px;
+        overflow: hidden;
+      }
+      .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 15px;
+        max-height: 50%;
+      }
+      .chart-card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .chart-card img { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+      .table-area {
+        background: #fff;
+        border-radius: 10px;
+        padding: 15px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      .table-area h3 { font-size: 0.85rem; margin-bottom: 8px; color: #1c2b4a; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+      .table-wrap { flex: 1; overflow: hidden; }
+      table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+      th { background: #f8f9fa; color: #1c2b4a; padding: 6px; text-align: left; border-bottom: 2px solid #dee2e6; }
+      td { padding: 5px 6px; border-bottom: 1px solid #f1f1f1; white-space: nowrap; }
+      tr:nth-child(even) td { background: #fafafa; }
+      
+      .footer {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.65rem;
+        color: #888;
+        background: #fff;
+        border-radius: 8px;
+      }
+      @media print {
+        body { -webkit-print-color-adjust: exact; }
+      }
+    `);
+    html.push('</style></head><body>');
+    html.push('<div class="dashboard">');
+    
+    // Header
+    html.push('<header class="header">');
+    html.push(`<h1> MarketLen Power Intelligence · ${esc(title)}</h1>`);
+    html.push(`<div class="header-meta">GEN: ${new Date().toLocaleString()} · ${esc(tblTitle)}</div>`);
+    html.push('</header>');
+    
+    html.push('<div class="main-content">');
+    
+    // Sidebar (KPIs)
+    html.push('<aside class="sidebar">');
+    if (kpiStrip) {
+      kpiStrip.querySelectorAll('.kpi-card').forEach(c => {
+        const label = c.querySelector('.kpi-card-label')?.textContent;
+        const value = c.querySelector('.kpi-card-value')?.textContent;
+        const sub = c.querySelector('.kpi-card-sub')?.textContent;
+        html.push(`
+          <div class="kpi-tile">
+            <div class="kpi-label">${esc(label)}</div>
+            <div class="kpi-value">${esc(value)}</div>
+            ${sub ? `<div class="kpi-sub">${esc(sub)}</div>` : ''}
+          </div>
+        `);
+      });
+    }
+    html.push('</aside>');
+    
+    // Visualization Area
+    html.push('<section class="viz-area">');
+    
+    // Charts
+    if (plots.length) {
+      html.push('<div class="charts-grid">');
+      plots.forEach(p => {
+        const img = chartImageMap.get(p);
+        if (img) html.push(`<div class="chart-card"><img src="${img}"></div>`);
+      });
+      html.push('</div>');
+    }
+    
+    // Table
+    if (table) {
+      html.push('<div class="table-area">');
+      html.push(`<h3>📋 Source Data: ${tblTitle}</h3>`);
+      html.push('<div class="table-wrap">');
+      const clone = table.cloneNode(true);
+      const tbody = clone.querySelector('tbody');
+      if (tbody && tbody.rows.length > 25) {
+        Array.from(tbody.rows).slice(25).forEach(r => r.remove());
+      }
+      html.push(clone.outerHTML);
+      html.push('</div></div>');
+    }
+    
+    html.push('</section>');
+    html.push('</div>'); // main-content
+    
+    html.push('<footer class="footer">Confidential · MarketLens Stock Market Intelligence Platform · Page 1 of 1</footer>');
+    html.push('</div></body></html>');
+
+    const pw = window.open('', '_blank');
+    if (!pw) { alert('Popup blocked'); return; }
+    pw.document.write(html.join('')); pw.document.close();
+    
+    pw.addEventListener('load', () => {
+      const imgs = Array.from(pw.document.querySelectorAll('img'));
+      if (!imgs.length) { setTimeout(() => pw.print(), 300); return; }
+      Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; }))).then(() => setTimeout(() => pw.print(), 500));
+    });
+
+  } catch (err) {
+    console.error('Dashboard export failed', err);
+  } finally {
+    if (downloadBtn) { downloadBtn.disabled = false; downloadBtn.innerHTML = originalHtml; }
+  }
+}
+
+/* ── DOWNLOAD CHAT ── */
+async function downloadChatAsPdf() {
+  const messagesArea = document.getElementById('messages-area');
+  if (!messagesArea.children.length) { alert('No chat content to export.'); return; }
+  const dlBtn = document.getElementById('download-chat-btn');
+  dlBtn.classList.add('loading');
+  // dlBtn.querySelector('span').textContent = 'Capturing…'; // Removed because span is gone
+
+  const chartImageMap = new Map();
+  for (const card of messagesArea.querySelectorAll('.chart-card')) {
+    const plotDiv = card.querySelector('div[id^="plt_"]');
+    if (plotDiv) {
+      try { chartImageMap.set(card, await Plotly.toImage(plotDiv, { format:'png', width:880, height:420, scale:2 })); }
+      catch(e) {}
+    }
+  }
+  // dlBtn.querySelector('span').textContent = 'Building…';
+
+  const html = [];
+  html.push('<!doctype html><html><head><meta charset="utf-8"><title>MarketLen Export</title><style>');
+  html.push('*{margin:0;padding:0;box-sizing:border-box}body{font-family:system-ui,sans-serif;padding:28px;background:#f5f5f5}.container{max-width:960px;margin:0 auto}h1{margin-bottom:20px;color:#1a1a1a;font-size:1.6rem;font-weight:700}.export-meta{font-size:.75rem;color:#888;margin-bottom:24px;font-family:monospace}.divider{text-align:center;color:#aaa;margin:16px 0;font-size:.75rem;padding:10px 0;border-top:1px solid #e0e0e0;border-bottom:1px solid #e0e0e0}.message{margin-bottom:14px;display:flex}.message.user{justify-content:flex-end}.message-content{max-width:76%;padding:11px 15px;border-radius:14px;line-height:1.55;word-wrap:break-word;font-size:.88rem}.message.user .message-content{background:#1f3c72;color:#fff}.message.bot .message-content{background:#f0f0f0;color:#333;border:1px solid #ddd}.message.sys .message-content{background:#e8f4f8;color:#0066cc;border:1px solid #b3d9ff}table{width:100%;border-collapse:collapse;margin:14px 0;background:#fff;border:1px solid #ddd;font-size:.8rem}th{background:#1c2b4a;color:#fff;padding:9px 11px;text-align:left;border:1px solid #243660;font-weight:600}td{padding:7px 11px;border:1px solid #e8e8e8}tr:nth-child(even) td{background:#fafafa}.section-label{font-weight:600;margin:18px 0 7px;color:#333;font-size:.85rem;padding:4px 8px;background:#f0f0f0;border-radius:4px;display:inline-block}.chart-wrapper{margin:18px 0;page-break-inside:avoid}.chart-title{font-weight:600;margin-bottom:7px;color:#333;font-size:.85rem}.chart-wrapper img{max-width:100%;border-radius:8px;border:1px solid #ddd;display:block}.chart-note{background:#fff3cd;border:1px solid #ffc107;padding:11px;margin:11px 0;border-radius:7px;color:#856404;font-size:.83rem}@media print{body{background:#fff;padding:0}}');
+  html.push('</style></head><body><div class="container">');
+  html.push('<h1>📈 MarketLens Chat Export</h1>');
+  html.push(`<div class="export-meta">Exported ${new Date().toLocaleString('en-IN')} · Thread ${currentThreadId || '—'}</div>`);
+
+  Array.from(messagesArea.children).forEach(el => {
+    if (el.classList.contains('table-card')) {
+      const table = el.querySelector('table');
+      const span  = el.querySelector('.tbl-title');
+      if (span) html.push(`<div class="section-label">📋 ${esc(span.textContent)}</div>`);
+      if (table) html.push(table.outerHTML); return;
+    }
+    if (el.classList.contains('chart-card')) {
+      const titleEl = el.querySelector('.chart-label');
+      const title   = titleEl ? titleEl.textContent.trim() : 'Chart';
+      const dataUrl = chartImageMap.get(el);
+      html.push('<div class="chart-wrapper">');
+      html.push(`<div class="chart-title">📈 ${esc(title)}</div>`);
+      html.push(dataUrl ? `<img src="${dataUrl}" alt="${esc(title)}">` : `<div class="chart-note">Chart could not be captured — view in original chat.</div>`);
+      html.push('</div>'); return;
+    }
+    if (el.classList.contains('divider')) { html.push(`<div class="divider">${esc(el.textContent)}</div>`); return; }
+    if (el.classList.contains('msg')) {
+      const role    = el.classList.contains('user') ? 'user' : el.classList.contains('bot') ? 'bot' : 'sys';
+      const bubbleEl = el.querySelector('.bubble');
+      const content  = bubbleEl ? bubbleEl.innerHTML : esc(el.innerText);
+      html.push(`<div class="message ${role}"><div class="message-content">${content}</div></div>`);
+    }
+  });
+  html.push('</div></body></html>');
+
+  const pw = window.open('', '_blank');
+  if (!pw) { alert('Popup blocked — please allow popups and try again.'); dlBtn.classList.remove('loading'); return; }
+  pw.document.write(html.join('')); pw.document.close();
+  pw.addEventListener('load', () => {
+    const imgs = Array.from(pw.document.querySelectorAll('img'));
+    if (!imgs.length) { pw.print(); return; }
+    Promise.all(imgs.map(img => img.complete ? Promise.resolve() : new Promise(res => { img.onload = res; img.onerror = res; }))).then(() => setTimeout(() => pw.print(), 150));
+  });
+
+  dlBtn.classList.remove('loading');
+  // Add a brief success flash
+  dlBtn.style.color = '#22a85a';
+  setTimeout(() => { dlBtn.style.color = ''; }, 2000);
+}
+
+/* ── DOM HELPERS ── */
+function addMsg(text, who, messageId = null) {
+  const w = document.createElement('div'); w.className = 'msg ' + who;
+  if (messageId) w.dataset.messageId = messageId;
+  const container = document.createElement('div');
+  container.style.cssText = 'display:flex;gap:7px;align-items:flex-start;width:100%';
+  const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
+  if (who === 'user') {
+    container.style.justifyContent = 'flex-end';
+    const editBtn = document.createElement('button'); editBtn.className = 'msg-edit-btn'; editBtn.textContent = 'EDIT';
+    editBtn.title = 'Edit message';
+    editBtn.onclick = e => { e.stopPropagation(); toggleMessageEdit(w); };
+    container.appendChild(b); container.appendChild(editBtn);
+  } else { container.appendChild(b); }
+  w.appendChild(container); msgArea.appendChild(w); msgArea.scrollTop = msgArea.scrollHeight; return w;
+}
+function addSys(text) {
+  const w = document.createElement('div'); w.className = 'msg sys';
+  const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
+  w.appendChild(b); msgArea.appendChild(w); msgArea.scrollTop = msgArea.scrollHeight; return b;
+}
+function addDivider(label) {
+  const d = document.createElement('div'); d.className = 'divider'; d.textContent = label; msgArea.appendChild(d);
+}
+function addError(text) {
+  const w = document.createElement('div'); w.className = 'msg bot';
+  const b = document.createElement('div'); b.className = 'bubble';
+  b.style.cssText = 'border-color:#8b1a1a;color:#8b1a1a';
+  b.textContent = '⚠ ' + text; w.appendChild(b); msgArea.appendChild(w);
+}
+function addThinking() {
+  const w = document.createElement('div'); w.className = 'msg bot';
+  const b = document.createElement('div'); b.className = 'bubble thinking-bubble';
+  b.innerHTML = `Analysing query <div class="dot-wave"><span></span><span></span><span></span></div>`;
+  w.appendChild(b); msgArea.appendChild(w); msgArea.scrollTop = msgArea.scrollHeight; return w;
+}
+function mkTag(label) { const s = document.createElement('span'); s.className = 'stat-tag'; s.textContent = label; return s; }
+function esc(str) { const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
+
+function downloadTableAsExcel(columns, rows, title = 'table') {
+  const filename = title.replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'table';
+  const html = ['<html xmlns:x="urn:schemas-microsoft-com:office:excel"><head><meta charset="UTF-8"></head><body><table border="1" style="border-collapse:collapse;">'];
+  html.push('<tr>' + columns.map(c => `<th style="background:#1c2b4a;color:#fff;padding:5px;">${esc(c)}</th>`).join('') + '</tr>');
+  rows.forEach(row => { html.push('<tr>' + row.map(cell => `<td style="padding:5px;">${esc(cell==null?'':String(cell))}</td>`).join('') + '</tr>'); });
+  html.push('</table></body></html>');
+  const blob = new Blob([html.join('')], { type:'application/vnd.ms-excel' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a'); a.href = url; a.download = filename + '.xls';
+  document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+function downloadTableAsCsv(columns, rows, title = 'table') {
+  const filename = title.replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'') || 'table';
+  const escCsv = (v) => {
+    const s = String(v ?? '');
+    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+  const lines = [];
+  lines.push(columns.map(escCsv).join(','));
+  rows.forEach(row => lines.push(row.map(escCsv).join(',')));
+  const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${filename}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ── BOOT ── */
+(function boot() {
+  if (authToken && currentUser) {
+    const initials = currentUser.split('_').map(p => p[0].toUpperCase()).join('');
+    document.getElementById('user-avatar-pill').textContent = initials;
+    document.getElementById('user-name-pill').textContent   = currentUser.replace('_',' ');
+    document.getElementById('login-overlay').style.display  = 'none';
+    applySidebarState();
+    loadThreadList();
+    if (currentThreadId) loadThreadHistory(currentThreadId); else setNoThreadState();
+  } else {
+    setNoThreadState();
+  }
+})();
+</script>
+</body>
+</html>

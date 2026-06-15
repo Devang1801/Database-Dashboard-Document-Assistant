@@ -1,0 +1,46 @@
+# Virtual Environments
+.venv/
+env/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment Variables
+.env
+.env.*
+
+# Models
+qwen_4b/
+model_all_mini/
+all-mini_v12/
+models/
+
+# Vector Stores
+faiss_index/
+chroma/
+vectordb/
+
+# Cache
+.cache/
+.huggingface/
+
+# Datasets
+data/
+datasets/
+
+# Logs
+*.log
+
+# VS Code
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Jupyter
+.ipynb_checkpoints/
